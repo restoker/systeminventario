@@ -15,5 +15,9 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true,
     },
+    session: {
+        expiresIn: 60 * 60 * 12 * 1, // 12 hours
+        updateAge: 60 * 60 * 12, // 12 hours (every 12 hours the session expiration is updated)
+    },
     plugins: [nextCookies(),]
 });
