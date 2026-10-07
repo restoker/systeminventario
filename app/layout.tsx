@@ -27,9 +27,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={cn("h-full", "antialiased")}
     >
-      <Provider>
-        <body className="min-h-full flex flex-col">{children}</body>
-      </Provider>
+      <body className="min-h-full flex flex-col">
+        <Provider>
+          {children}
+        </Provider>
+      </body>
     </html>
   );
 }

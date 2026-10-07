@@ -1,138 +1,225 @@
 'use client';
 
 import React, { ReactNode, useState } from 'react'
-
-const formFields = [
-    { label: "First Name", value: "Harshit", type: "text" },
-    { label: "Last Name", value: "Sharma", type: "text" },
-];
+import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { registerSchema, type RegisterSchema } from '@/types/register-schema';
+import { useAction } from 'next-safe-action/hooks';
+import { registerAction } from '@/server/actions/auth/register-auth';
+import { toast } from 'sonner';
 
 const termsText = (
     <>
         By creating an account, you agree to our{" "}
-        <a href="#" className="font-medium text-black/45 underline underline-offset-2 dark:text-white/45">
+        <a href="#" className="font-medium text-black/60 underline underline-offset-2 hover:text-black dark:text-white/60 dark:hover:text-white">
             Terms and Services
         </a>{" "}
         and{" "}
-        <a href="#" className="font-medium text-black/45 underline underline-offset-2 dark:text-white/45">
+        <a href="#" className="font-medium text-black/60 underline underline-offset-2 hover:text-black dark:text-white/60 dark:hover:text-white">
             Privacy Policy
         </a>
     </>
 );
 
 const RegisterForm = () => {
+    const {
+        register,
+        handleSubmit,
+        formState: { errors, isSubmitting },
+    } = useForm({
+        resolver: zodResolver(registerSchema),
+        defaultValues: {
+            name: '',
+            username: '',
+            email: '',
+            phone: '',
+            password: '',
+            confirmPassword: '',
+        },
+        mode: 'onTouched',
+    });
+
+    const { execute, status } = useAction(registerAction, {
+        onSuccess: ({ data }) => {
+            if (data.ok) {
+                toast(data.msg, { style: { color: "green" }, closeButton: true, duration: 2000, position: "top-right" });
+            }
+            toast(data.msg, { style: { color: "red" }, closeButton: true, duration: 2000, position: "top-right" })
+        },
+        onError: (error) => {
+            toast('Error en el Servidor al registrar', { style: { color: "red" }, closeButton: true, duration: 2000, position: "top-right" })
+        }
+    })
+
+    const onSubmit = async (data: RegisterSchema) => {
+        // Validación completa en cliente. Acciones de servidor pendientes de implementación.
+        execute(data);
+    };
 
     return (
-        <>
-            <form className="space-y-5">
-                <div className="grid gap-5 sm:grid-cols-2">
-                    {formFields.map((field) => (
-                        <FieldBox key={field.label} label={field.label} value={field.value} />
-                    ))}
-                </div>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-5 space-y-3">
+            <div className="grid gap-2.5 sm:grid-cols-2">
+                <FieldBox
+                    id="name"
+                    label="Nombre completo"
+                    placeholder="Juan Pérez"
+                    error={errors.name?.message}
+                    {...register('name')}
+                />
+                <FieldBox
+                    id="username"
+                    label="Username"
+                    placeholder="usuario123"
+                    error={errors.username?.message}
+                    {...register('username')}
+                />
+            </div>
 
-                <FieldBox label="Email" value="harshitlog@gmail.com" type="email" />
-                <FieldBox label="Password" value="*************" type="password" />
+            <div className="grid gap-2.5 sm:grid-cols-2">
+                <FieldBox
+                    id="email"
+                    label="Email"
+                    type="email"
+                    placeholder="tu@email.com"
+                    error={errors.email?.message}
+                    {...register('email')}
+                />
+                <FieldBox
+                    id="phone"
+                    label="Teléfono"
+                    type="tel"
+                    placeholder="912345678"
+                    error={errors.phone?.message}
+                    {...register('phone')}
+                />
+            </div>
 
-                <div className="space-y-4 pt-2 text-sm leading-5 text-black/30 dark:text-white/35 sm:text-[15px]">
-                    <CheckboxLine>I don't want to receive emails about solaceui feature updates</CheckboxLine>
-                    <CheckboxLine>{termsText}</CheckboxLine>
-                </div>
+            <div className="grid gap-2.5 sm:grid-cols-2">
+                <FieldBox
+                    id="password"
+                    label="Contraseña"
+                    type="password"
+                    placeholder="••••••••••••"
+                    error={errors.password?.message}
+                    {...register('password')}
+                />
+                <FieldBox
+                    id="confirmPassword"
+                    label="Confirmar contraseña"
+                    type="password"
+                    placeholder="••••••••••••"
+                    error={errors.confirmPassword?.message}
+                    {...register('confirmPassword')}
+                />
+            </div>
 
-                <button
-                    type="button"
-                    className="mt-9 flex h-12 w-full items-center justify-center rounded-[10px] border border-black/40 bg-black text-xl font-medium text-white transition-colors hover:bg-black/85 dark:border-white/40 dark:bg-white dark:text-black dark:hover:bg-white/85"
+            <div className="space-y-2 pt-1 text-xs leading-snug text-black/50 dark:text-white/45">
+                <CheckboxLine>I don't want to receive emails about solaceui feature updates</CheckboxLine>
+                <CheckboxLine>{termsText}</CheckboxLine>
+            </div>
+
+            <button
+                type="submit"
+                disabled={isSubmitting}
+                className="mt-4 flex h-10 sm:h-11 w-full items-center justify-center gap-2 rounded-lg border border-black/30 bg-black text-sm sm:text-base font-medium text-white transition-colors hover:bg-black/85 disabled:cursor-not-allowed disabled:opacity-70 dark:border-white/30 dark:bg-white dark:text-black dark:hover:bg-white/85 cursor-pointer"
+            >
+                {isSubmitting ? (
+                    <>
+                        <Loader2 className="size-4 animate-spin" />
+                        <span>Registrando...</span>
+                    </>
+                ) : (
+                    <span>Crear cuenta</span>
+                )}
+            </button>
+
+            <p className="pt-1 text-center text-xs text-black/60 dark:text-white/50">
+                Already have an account?{' '}
+                <Link
+                    href="/login"
+                    className="font-medium text-black underline underline-offset-2 hover:opacity-80 dark:text-white"
                 >
-                    Submit
-                </button>
-            </form>
-        </>
-    )
-}
-
-export default RegisterForm
-
-
-function SocialButton({ icon, label }: { icon: ReactNode; label: string }) {
-    return (
-        <button
-            type="button"
-            className="flex h-10 items-center justify-center gap-2 rounded-[10px] border border-black/25 bg-white px-3 text-sm leading-none text-black transition-colors hover:bg-black/[0.03] dark:border-white/20 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 xl:text-[19px]"
-        >
-            <span className="shrink-0">{icon}</span>
-            <span className="whitespace-nowrap">{label}</span>
-        </button>
+                    Sign in
+                </Link>
+            </p>
+        </form>
     );
+};
+
+export default RegisterForm;
+
+interface FieldBoxProps extends React.InputHTMLAttributes<HTMLInputElement> {
+    id: string;
+    label: string;
+    error?: string;
 }
 
-function FieldBox({ label, value, type = "text" }: { label: string; value: string; type?: string }) {
-    const [inputValue, setInputValue] = useState(value);
-    const [isEditing, setIsEditing] = useState(false);
+function FieldBox({
+    id,
+    label,
+    type = "text",
+    placeholder,
+    error,
+    ...props
+}: FieldBoxProps) {
+    const [showPassword, setShowPassword] = useState(false);
+    const isPassword = type === "password";
 
     return (
-        <label className="flex h-14 items-center justify-between gap-4 rounded-[10px] border border-black/25 bg-white px-5 text-lg leading-none dark:border-white/15 dark:bg-white/5 xl:text-xl">
-            <input
-                type={type}
-                value={inputValue}
-                aria-label={label}
-                onFocus={() => {
-                    if (!isEditing) {
-                        setInputValue("");
-                        setIsEditing(true);
-                    }
-                }}
-                onChange={(event) => {
-                    setInputValue(event.target.value);
-                    setIsEditing(true);
-                }}
-                className="min-w-0 flex-1 truncate bg-transparent text-black/30 outline-none placeholder:text-black/30 dark:text-white/35 dark:placeholder:text-white/35"
-            />
-            {!isEditing && <span className="shrink-0 text-black dark:text-white">{label}</span>}
-        </label>
+        <div>
+            <label
+                htmlFor={id}
+                className="block text-xs sm:text-sm font-medium text-black dark:text-white"
+            >
+                {label}
+            </label>
+            <div className="relative mt-1">
+                <input
+                    id={id}
+                    type={isPassword ? (showPassword ? "text" : "password") : type}
+                    placeholder={placeholder || label}
+                    aria-invalid={!!error}
+                    className={`block w-full rounded-lg bg-white px-3 py-2 text-sm text-black placeholder:text-black/30 focus:outline-none dark:bg-white/5 dark:text-white dark:placeholder:text-white/30 transition-colors ${error
+                        ? "border border-red-500 focus:border-red-500 dark:border-red-500"
+                        : "border border-black/20 dark:border-white/15 focus:border-black/60 dark:focus:border-white/50"
+                        } ${isPassword ? "pr-9" : ""}`}
+                    {...props}
+                />
+                {isPassword && (
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white focus:outline-none cursor-pointer"
+                    >
+                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    </button>
+                )}
+            </div>
+            {error && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    {error}
+                </p>
+            )}
+        </div>
     );
 }
 
 function CheckboxLine({ children }: { children: ReactNode }) {
     return (
-        <label className="flex items-start gap-3">
-            <span className="relative mt-1 size-3.5 shrink-0">
+        <label className="flex items-start gap-2.5 cursor-pointer select-none">
+            <span className="relative mt-0.5 size-3.5 shrink-0">
                 <input
                     type="checkbox"
-                    className="peer size-full appearance-none rounded-[2px] border border-black/25 bg-white checked:border-black checked:bg-black dark:border-white/30 dark:bg-white/5 dark:checked:border-white dark:checked:bg-white"
+                    className="peer size-full appearance-none rounded-[3px] border border-black/30 bg-white checked:border-black checked:bg-black dark:border-white/30 dark:bg-white/5 dark:checked:border-white dark:checked:bg-white cursor-pointer"
                 />
                 <svg viewBox="0 0 12 12" className="pointer-events-none absolute inset-0 hidden size-full p-0.5 text-white peer-checked:block dark:text-black" fill="none" aria-hidden="true">
-                    <path d="M3 6.2 5 8.1 9 3.9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M3 6.2 5 8.1 9 3.9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
             </span>
             <span>{children}</span>
         </label>
     );
 }
-
-function GoogleIcon() {
-    return (
-        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09Z" fill="#4285F4" />
-            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23Z" fill="#34A853" />
-            <path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84Z" fill="#FBBC05" />
-            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z" fill="#EB4335" />
-        </svg>
-    );
-}
-
-function AppleIcon() {
-    return (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M17.05 12.54c-.03-3.02 2.47-4.47 2.58-4.54-1.41-2.06-3.6-2.34-4.38-2.37-1.86-.19-3.64 1.1-4.58 1.1-.95 0-2.42-1.07-3.98-1.04-2.05.03-3.94 1.19-4.99 3.02-2.13 3.69-.54 9.16 1.53 12.15 1.01 1.46 2.22 3.1 3.81 3.04 1.53-.06 2.11-.99 3.96-.99s2.37.99 3.99.96c1.65-.03 2.69-1.49 3.69-2.96 1.16-1.69 1.64-3.33 1.66-3.41-.04-.02-3.2-1.23-3.24-4.87ZM14.03 3.66c.84-1.02 1.41-2.43 1.25-3.84-1.21.05-2.68.81-3.55 1.83-.78.9-1.46 2.34-1.28 3.72 1.35.1 2.73-.69 3.58-1.71Z" />
-        </svg>
-    );
-}
-
-function WindowsIcon({ className }: { className?: string }) {
-    return (
-        <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-            <path d="M3 4.7 10.7 3.6v7.7H3V4.7Zm8.8-1.25L21 2.1v9.2h-9.2V3.45ZM3 12.7h7.7v7.7L3 19.3v-6.6Zm8.8 0H21v9.2l-9.2-1.3v-7.9Z" />
-        </svg>
-    );
-}
-

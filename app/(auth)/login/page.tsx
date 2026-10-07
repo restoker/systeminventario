@@ -1,6 +1,16 @@
+import { auth } from "@/lib/auth";
 import LoginForm from "./_ui/LoginForm";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { authClient } from "@/lib/auth-client";
 
-export default function Login() {
+export default async function Login() {
+    const { data } = await authClient.getSession();
+
+    if (data) {
+        redirect("/dashboard");
+    }
+
     return (
         <div>
             <div className="flex min-h-full">

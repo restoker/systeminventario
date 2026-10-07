@@ -22,7 +22,7 @@ const LoginForm = () => {
     } = useForm<LoginSchema>({
         resolver: zodResolver(loginSchema),
         defaultValues: {
-            email: '',
+            username: '',
             password: '',
         },
         mode: 'onTouched',
@@ -31,53 +31,60 @@ const LoginForm = () => {
     const { execute, status } = useAction(loginAction, {
         onSuccess: ({ data }) => {
             if (data.ok) {
-                toast('Action completed successfully!', {
-                    closeButton: true
+                toast('Inicio de sesión exitoso!', {
+                    closeButton: true,
+                    duration: 2000,
+                    position: "top-right",
+                    style: { color: "green" }
                 })
                 router.push('/dashboard')
                 router.refresh()
-            } else {
-                toast(data.msg, {
-                    closeButton: true
-                })
             }
+            toast(data.msg, {
+                closeButton: true,
+                duration: 2000,
+                position: "top-right",
+                style: { color: "red" }
+            })
         },
         onError: (error) => {
-            toast('error al iniciar sesión', {
-                closeButton: true
+            toast('Error en el Servidor al iniciar sesión', {
+                closeButton: true,
+                duration: 2000,
+                position: "top-right",
+                style: { color: "red" }
             })
         },
     })
 
     const onSubmit = async (data: LoginSchema) => {
         execute(data)
-
     }
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
 
             <div>
-                <label htmlFor="email" className="block text-sm/6 font-medium text-gray-900 dark:text-gray-100">
-                    Email address
+                <label htmlFor="username" className="block text-sm/6 font-medium text-gray-900 dark:text-gray-100">
+                    Username
                 </label>
                 <div className="mt-2">
                     <input
-                        id="email"
-                        type="email"
-                        autoComplete="email"
-                        placeholder="tu@email.com"
-                        aria-invalid={!!errors.email}
-                        {...register('email')}
-                        className={`block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:placeholder:text-gray-500 transition-colors ${errors.email
+                        id="username"
+                        type="text"
+                        autoComplete="username"
+                        placeholder="usuario123"
+                        aria-invalid={!!errors.username}
+                        {...register('username')}
+                        className={`block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:placeholder:text-gray-500 transition-colors ${errors.username
                             ? 'outline-red-500 focus:outline-red-500'
                             : 'outline-gray-300 focus:outline-amber-600 dark:outline-white/10 dark:focus:outline-amber-500'
                             }`}
                     />
                 </div>
-                {errors.email && (
+                {errors.username && (
                     <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">
-                        {errors.email.message}
+                        {errors.username.message}
                     </p>
                 )}
             </div>

@@ -12,6 +12,30 @@ export const auth = betterAuth({
         usePlural: true,
         schema: schema,
     }),
+    user: {
+        additionalFields: {
+            username: {
+                type: "string",
+                length: 20,
+                optional: false,
+                unique: true,
+                index: true,
+            },
+            phone: {
+                type: "string",
+                length: 9,
+                unique: false,
+                index: false,
+            },
+            role: {
+                type: "string",
+                values: ["admin", "saler"],
+                unique: false,
+                index: false,
+                default: "saler",
+            }
+        }
+    },
     emailAndPassword: {
         enabled: true,
     },

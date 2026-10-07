@@ -1,4 +1,4 @@
-import { users, sessions, accounts, verifications } from "./auth-schema";
+import { users, sessions, accounts, verifications, roleEnum } from "./auth-schema";
 import { products } from "./products";
 
 export default {
@@ -7,4 +7,5 @@ export default {
     accounts,
     verifications,
     products,
+    roleEnum,
 }
