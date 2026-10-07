@@ -1,3 +1,5 @@
+import LoginForm from "./_ui/LoginForm";
+
 export default function Login() {
     return (
         <div>
@@ -31,95 +33,7 @@ export default function Login() {
 
                         <div className="mt-10">
                             <div>
-                                <form action="#" method="POST" className="space-y-6">
-                                    <div>
-                                        <label htmlFor="email" className="block text-sm/6 font-medium text-gray-900 dark:text-gray-100">
-                                            Email address
-                                        </label>
-                                        <div className="mt-2">
-                                            <input
-                                                id="email"
-                                                name="email"
-                                                type="email"
-                                                required
-                                                autoComplete="email"
-                                                className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-amber-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-amber-500"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label htmlFor="password" className="block text-sm/6 font-medium text-gray-900 dark:text-gray-100">
-                                            Password
-                                        </label>
-                                        <div className="mt-2">
-                                            <input
-                                                id="password"
-                                                name="password"
-                                                type="password"
-                                                required
-                                                autoComplete="current-password"
-                                                className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-amber-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-amber-500"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex gap-3">
-                                            <div className="flex h-6 shrink-0 items-center">
-                                                <div className="group grid size-4 grid-cols-1">
-                                                    <input
-                                                        id="remember-me"
-                                                        name="remember-me"
-                                                        type="checkbox"
-                                                        className="col-start-1 row-start-1 appearance-none rounded-sm border border-gray-300 bg-white checked:border-amber-600 checked:bg-amber-600 indeterminate:border-amber-600 indeterminate:bg-amber-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:checked:bg-gray-100 dark:border-white/10 dark:bg-white/5 dark:checked:border-amber-500 dark:checked:bg-amber-500 dark:indeterminate:border-amber-500 dark:indeterminate:bg-amber-500 dark:focus-visible:outline-amber-500 forced-colors:appearance-auto"
-                                                    />
-                                                    <svg
-                                                        fill="none"
-                                                        viewBox="0 0 14 14"
-                                                        className="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-disabled:stroke-gray-950/25"
-                                                    >
-                                                        <path
-                                                            d="M3 8L6 11L11 3.5"
-                                                            strokeWidth={2}
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            className="opacity-0 group-has-checked:opacity-100"
-                                                        />
-                                                        <path
-                                                            d="M3 7H11"
-                                                            strokeWidth={2}
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            className="opacity-0 group-has-indeterminate:opacity-100"
-                                                        />
-                                                    </svg>
-                                                </div>
-                                            </div>
-                                            <label htmlFor="remember-me" className="block text-sm/6 text-gray-900 dark:text-gray-300">
-                                                Remember me
-                                            </label>
-                                        </div>
-
-                                        <div className="text-sm/6">
-                                            <a
-                                                href="#"
-                                                className="font-semibold text-amber-600 hover:text-amber-500 dark:text-amber-400 dark:hover:text-amber-300"
-                                            >
-                                                Forgot password?
-                                            </a>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <button
-                                            type="submit"
-                                            className="flex w-full justify-center rounded-md bg-amber-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-amber-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 dark:bg-amber-500 dark:shadow-none dark:hover:bg-amber-400 dark:focus-visible:outline-amber-500"
-                                        >
-                                            Sign in
-                                        </button>
-                                    </div>
-                                </form>
+                                <LoginForm />
                             </div>
 
                             {/* <div className="mt-10">
@@ -187,8 +101,9 @@ export default function Login() {
                     <img
                         alt=""
                         src="https://cdn.cosmos.so/d744ff96-04c7-4e4f-a3cd-341e0ecc816c?format=webp"
-                        className="absolute inset-0 size-full object-cover min-h-svh"
+                        className="absolute inset-0 size-full object-cover min-h-svh object-center"
                     />
+                    {/* <video src="/video/login1.mp4" autoPlay loop muted className="absolute inset-0 size-full object-cover min-h-svh" /> */}
                 </div>
             </div>
         </div>
