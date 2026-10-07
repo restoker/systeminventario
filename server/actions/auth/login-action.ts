@@ -10,7 +10,7 @@ import db from "@/server";
 export const loginAction = actionClient
     .inputSchema(loginSchema)
     .action(async ({ parsedInput: { username, password } }) => {
-        console.log(username, password);
+        // console.log(username, password);
         try {
             // const [user] = await db
             //     .select()

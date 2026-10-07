@@ -1,7 +1,15 @@
 import { GrainGradient } from "@paper-design/shaders-react";
 import RegisterForm from "./_ui/RegisterForm";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
-export default function Register() {
+export default async function Register() {
+    const session = await auth.api.getSession({ headers: await headers() });
+    // console.log(session);
+    if (session) {
+        redirect('/dashboard')
+    }
     return (
         <section className="h-screen max-h-screen overflow-hidden bg-white p-3 text-black antialiased [font-synthesis:none] dark:bg-[#050505] dark:text-white">
             <div className="grid h-full max-h-[calc(100vh-1.5rem)] gap-4 lg:grid-cols-[0.94fr_1.06fr]">

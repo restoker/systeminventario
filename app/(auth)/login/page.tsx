@@ -1,16 +1,14 @@
-import { auth } from "@/lib/auth";
 import LoginForm from "./_ui/LoginForm";
 import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { authClient } from "@/lib/auth-client";
 
 export default async function Login() {
-    const { data } = await authClient.getSession();
-
-    if (data) {
-        redirect("/dashboard");
+    const session = await auth.api.getSession({ headers: await headers() });
+    // console.log(session);
+    if (session) {
+        redirect('/dashboard')
     }
-
     return (
         <div>
             <div className="flex min-h-full">

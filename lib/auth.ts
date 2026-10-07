@@ -45,3 +45,5 @@ export const auth = betterAuth({
     },
     plugins: [nextCookies(),]
 });
+
+export const { api, handler, options } = auth;

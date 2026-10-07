@@ -28,6 +28,7 @@ const RegisterForm = () => {
         register,
         handleSubmit,
         formState: { errors, isSubmitting },
+        reset
     } = useForm({
         resolver: zodResolver(registerSchema),
         defaultValues: {
@@ -44,18 +45,29 @@ const RegisterForm = () => {
     const { execute, status } = useAction(registerAction, {
         onSuccess: ({ data }) => {
             if (data.ok) {
-                toast(data.msg, { style: { color: "green" }, closeButton: true, duration: 2000, position: "top-right" });
+                toast.success(data.msg, {
+                    style: {
+                        '--normal-bg':
+                            'color-mix(in oklab, light-dark(var(--color-green-600), var(--color-green-400)) 10%, var(--background))',
+                        '--normal-text': 'light-dark(var(--color-green-600), var(--color-green-400))',
+                        '--normal-border': 'light-dark(var(--color-green-600), var(--color-green-400))'
+                    } as React.CSSProperties,
+                    closeButton: true,
+                })
+                reset();
+            } else {
+                toast.error(data.msg, { closeButton: true, duration: 2000, position: "top-right" })
             }
-            toast(data.msg, { style: { color: "red" }, closeButton: true, duration: 2000, position: "top-right" })
         },
         onError: (error) => {
-            toast('Error en el Servidor al registrar', { style: { color: "red" }, closeButton: true, duration: 2000, position: "top-right" })
+            toast.error('Error en el Servidor al registrar', { closeButton: true, duration: 2000, position: "top-right" })
         }
     })
 
     const onSubmit = async (data: RegisterSchema) => {
         // Validación completa en cliente. Acciones de servidor pendientes de implementación.
         execute(data);
+        // console.log(data);
     };
 
     return (
@@ -90,9 +102,36 @@ const RegisterForm = () => {
                     id="phone"
                     label="Teléfono"
                     type="tel"
+                    inputMode="numeric"
+                    maxLength={9}
                     placeholder="912345678"
                     error={errors.phone?.message}
-                    {...register('phone')}
+                    {...register('phone', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 9);
+                        },
+                    })}
+                    onKeyDown={(e) => {
+                        if (
+                            [
+                                'Backspace',
+                                'Delete',
+                                'Tab',
+                                'ArrowLeft',
+                                'ArrowRight',
+                                'Home',
+                                'End',
+                                'Enter',
+                            ].includes(e.key) ||
+                            e.ctrlKey ||
+                            e.metaKey
+                        ) {
+                            return;
+                        }
+                        if (!/^\d$/.test(e.key)) {
+                            e.preventDefault();
+                        }
+                    }}
                 />
             </div>
 

@@ -31,7 +31,7 @@ const LoginForm = () => {
     const { execute, status } = useAction(loginAction, {
         onSuccess: ({ data }) => {
             if (data.ok) {
-                toast('Inicio de sesión exitoso!', {
+                toast.success('Inicio de sesión exitoso!', {
                     closeButton: true,
                     duration: 2000,
                     position: "top-right",
@@ -39,16 +39,18 @@ const LoginForm = () => {
                 })
                 router.push('/dashboard')
                 router.refresh()
+            } else {
+                toast.error(data.msg, {
+                    closeButton: true,
+                    duration: 2000,
+                    position: "top-right",
+                    style: { color: "red" }
+                })
             }
-            toast(data.msg, {
-                closeButton: true,
-                duration: 2000,
-                position: "top-right",
-                style: { color: "red" }
-            })
+
         },
         onError: (error) => {
-            toast('Error en el Servidor al iniciar sesión', {
+            toast.error('Error en el Servidor al iniciar sesión', {
                 closeButton: true,
                 duration: 2000,
                 position: "top-right",
