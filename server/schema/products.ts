@@ -1,15 +1,30 @@
-import { pgTable, text, real, integer, uuid } from "drizzle-orm/pg-core";
+import { text, real, integer, uuid, boolean } from "drizzle-orm/pg-core";
+import { coreTable } from "./communityShieldColumns";
+import { categorias } from "./categorias";
+import { marcas } from "./marca";
+import { unidades } from "./unidad";
+import { proveedor } from "./proveedor";
+import { sucursal } from "./sucursal";
 
-export const products = pgTable("products", {
-    id: uuid("id").primaryKey().defaultRandom(),
+export const products = coreTable("products", {
     name: text("name").notNull(),
+    codigo: text("codigo").unique().notNull(),
     price: real("price").notNull(),
     description: text("description").notNull(),
-    image: text("image").notNull(),
+    precioCompra: real("precio_compra"),
+    precioVenta: real("precio_venta").notNull(),
+    igv: real("igv").default(0.18),
+    image: text("image"),
+    enConsignacion: boolean("en_consignacion").default(false),//si esta en consignación se no se establece el precio de compra
     stock: integer("stock").notNull(),
+    stockMinimo: integer("stock_minimo").notNull(),
+    nota: text("nota"),
     slug: text("slug").notNull(),
-    // categoryId: text("category_id").notNull().references(() => categories.id),
-
+    categoryId: uuid("category_id").notNull().references(() => categorias.id),
+    marcaId: uuid("marca_id").references(() => marcas.id),
+    unidadId: uuid("unidad_id").references(() => unidades.id),
+    proveedorId: uuid("proveedor_id").references(() => proveedor.id),
+    sucursalId: uuid("sucursal_id").references(() => sucursal.id),
 });
 
 export type Product = typeof products.$inferSelect;
