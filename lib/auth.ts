@@ -33,6 +33,7 @@ export const auth = betterAuth({
                 unique: false,
                 index: false,
                 default: "saler",
+                // input: false,
             }
         }
     },

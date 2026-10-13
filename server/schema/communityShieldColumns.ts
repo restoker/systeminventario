@@ -8,6 +8,7 @@ import {
     type PgBuildExtraConfigColumns,
     type PgTableExtraConfigValue,
     type PgTableExtraConfig,
+    text,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -27,7 +28,9 @@ export const softDeleteShield = {
 };
 
 export const coreColumns = {
-    id: uuid("id").primaryKey().defaultRandom(),
+    id: text("id")
+        .primaryKey()
+        .$defaultFn(() => crypto.randomUUID()),
     ...timestampsShield,
 };
 

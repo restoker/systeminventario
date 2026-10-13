@@ -1,6 +1,6 @@
 import { users } from "./auth-schema";
 import { coreTable } from "./communityShieldColumns";
-import { boolean, integer, real, text, uuid } from "drizzle-orm/pg-core";
+import { boolean, real, text } from "drizzle-orm/pg-core";
 import { tipoComprobante } from "./tipo-comprobante";
 import { tipoDocumento } from "./tipo-documento";
 
@@ -12,9 +12,9 @@ export const comprobante = coreTable("comprobante", {
     telefono: text('telefono'),
     numeroDocumento: text('numeroDocumento'),
     nombre: text('nombre'),
-    createdByUserId: uuid('createdByUserId').references(() => users.id),
-    tipoDocumentoId: uuid('tipoDocumentoId').references(() => tipoDocumento.id),
-    tipoComprobanteId: uuid('tipoComprobantePagoId').notNull().references(() => tipoComprobante.id),
+    createdByUserId: text('createdByUserId').references(() => users.id),
+    tipoDocumentoId: text('tipoDocumentoId').references(() => tipoDocumento.id),
+    tipoComprobanteId: text('tipoComprobantePagoId').notNull().references(() => tipoComprobante.id),
 });
 
 export type Comprobante = typeof comprobante.$inferSelect;

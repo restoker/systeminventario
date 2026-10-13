@@ -20,11 +20,11 @@ export const products = coreTable("products", {
     stockMinimo: integer("stock_minimo").notNull(),
     nota: text("nota"),
     slug: text("slug").notNull(),
-    categoryId: uuid("category_id").notNull().references(() => categorias.id),
-    marcaId: uuid("marca_id").references(() => marcas.id),
-    unidadId: uuid("unidad_id").references(() => unidades.id),
-    proveedorId: uuid("proveedor_id").references(() => proveedor.id),
-    sucursalId: uuid("sucursal_id").references(() => sucursal.id),
+    categoryId: text("category_id").notNull().references(() => categorias.id),
+    marcaId: text("marca_id").references(() => marcas.id),
+    unidadId: text("unidad_id").references(() => unidades.id),
+    proveedorId: text("proveedor_id").references(() => proveedor.id),
+    sucursalId: text("sucursal_id").references(() => sucursal.id),
 });
 
 export type Product = typeof products.$inferSelect;

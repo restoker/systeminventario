@@ -13,8 +13,9 @@ export const ingresos = coreTable("ingresos", {
     estado: estadoIngresoEnum('estado').default('activo'),
     otros: boolean('otros').default(false),
     isfromAdelanto: boolean('isfromAdelanto').default(false),
-    cajaId: uuid('cajaId').notNull().references(() => caja.id),
-    createdByUserId: uuid('createdByUserId').references(() => users.id),
-    tipoPagoId: uuid('tipoPagoId').notNull().references(() => tipoPago.id),//tipo de pago hace refencia si se pago con yape, plin, efectivo, tarjeta, etc.
-    comprobanteId: uuid('comprobanteId').references(() => comprobante.id),
+    cajaId: text('cajaId').notNull().references(() => caja.id),
+    createdByUserId: text('createdByUserId').references(() => users.id),
+    tipoPagoId: text('tipoPagoId').notNull().references(() => tipoPago.id),//tipo de pago hace refencia si se pago con yape, plin, efectivo, tarjeta, etc.
+    comprobanteId: text('comprobanteId').references(() => comprobante.id),
 });
+

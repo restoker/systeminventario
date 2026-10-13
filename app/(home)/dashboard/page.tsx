@@ -1,7 +1,16 @@
-export default function Dashboard() {
+import { auth } from "@/lib/auth";
+import SidebarAux from "../_ui/Sidebar";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+export default async function Dashboard() {
+    const session = await auth.api.getSession({ headers: await headers() });
+
+    if (!session) redirect("/login");
+
     return (
-        <div>
+        <SidebarAux>
             <h1>Dashboard</h1>
-        </div>
+        </SidebarAux>
     );
 }

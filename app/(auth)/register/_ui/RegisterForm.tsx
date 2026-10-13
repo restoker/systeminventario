@@ -9,6 +9,7 @@ import { registerSchema, type RegisterSchema } from '@/types/register-schema';
 import { useAction } from 'next-safe-action/hooks';
 import { registerAction } from '@/server/actions/auth/register-auth';
 import { toast } from 'sonner';
+import { clsx } from 'cn';
 
 const termsText = (
     <>
@@ -55,6 +56,7 @@ const RegisterForm = () => {
                     closeButton: true,
                 })
                 reset();
+                window.location.href = '/login';
             } else {
                 toast.error(data.msg, { closeButton: true, duration: 2000, position: "top-right" })
             }
@@ -161,10 +163,13 @@ const RegisterForm = () => {
 
             <button
                 type="submit"
-                disabled={isSubmitting}
-                className="mt-4 flex h-10 sm:h-11 w-full items-center justify-center gap-2 rounded-lg border border-black/30 bg-black text-sm sm:text-base font-medium text-white transition-colors hover:bg-black/85 disabled:cursor-not-allowed disabled:opacity-70 dark:border-white/30 dark:bg-white dark:text-black dark:hover:bg-white/85 cursor-pointer"
+                disabled={isSubmitting || status === 'executing'}
+                className={clsx('mt-4 flex h-10 sm:h-11 w-full items-center justify-center gap-2 rounded-lg border border-black/30 bg-black text-sm sm:text-base font-medium text-white transition-colors hover:bg-black/85 dark:border-white/30 dark:bg-white dark:text-black dark:hover:bg-white/85 cursor-pointer', {
+                    'cursor-wait': status === 'executing',
+                    'disabled:cursor-not-allowed disabled:opacity-70': status === 'executing',
+                })}
             >
-                {isSubmitting ? (
+                {status === 'executing' ? (
                     <>
                         <Loader2 className="size-4 animate-spin" />
                         <span>Registrando...</span>
