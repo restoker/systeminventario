@@ -13,9 +13,9 @@ export const registerAction = actionClient
     .action(async ({ parsedInput: { email, password, id, name, phone, username } }) => {
 
         try {
-            // const session = await auth.api.getSession({ headers: await headers() });
-            // if (!session) return { ok: false, msg: 'No tiene permisos para esta operacion' }
-            // if (session.user.role !== 'admin') return { ok: false, msg: 'No tiene permiso para realizar esta operacion' };
+            const session = await auth.api.getSession({ headers: await headers() });
+            if (!session) return { ok: false, msg: 'No tiene permisos para esta operacion' }
+            if (session.user.role !== 'admin') return { ok: false, msg: 'No tiene permiso para realizar esta operacion' };
 
             if (id) {
                 // editar el usuario

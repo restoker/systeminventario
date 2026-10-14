@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { UserIcon, SettingsIcon, CreditCardIcon, UsersIcon, SquarePenIcon, CirclePlusIcon, LogOutIcon } from "lucide-react"
 import { authClient } from '@/lib/auth-client'
+import { useRouter } from 'next/navigation';
 
 type Props = {
   trigger: ReactElement
@@ -22,6 +23,18 @@ type Props = {
 const ProfileDropdown = ({ trigger, defaultOpen, align = 'end' }: Props) => {
   const { data } = authClient.useSession();
   const user = data?.user;
+  const router = useRouter();
+
+  const salir = async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: async () => {
+          router.replace('/login');
+        }
+      }
+    });
+  }
+
   return (
     <DropdownMenu defaultOpen={defaultOpen}>
       <DropdownMenuTrigger render={trigger} />
@@ -81,7 +94,7 @@ const ProfileDropdown = ({ trigger, defaultOpen, align = 'end' }: Props) => {
         <DropdownMenuGroup>
           <DropdownMenuItem variant='destructive' className='gap-2 px-4 py-2.5 text-base'>
             <LogOutIcon className='size-5' />
-            <span onClick={() => authClient.signOut()}>Logout</span>
+            <span onClick={salir}>Logout</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

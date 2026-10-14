@@ -21,7 +21,7 @@ export const loginAction = actionClient
                 where: { username: { eq: username } }
             });
 
-            console.log(usuarioExiste);
+            // console.log(usuarioExiste);
 
             if (!usuarioExiste) return {
                 ok: false,
