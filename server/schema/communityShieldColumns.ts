@@ -15,14 +15,6 @@ import {
  * 1. Shield Columns Definitions
  * Standardized audit and identifier columns across the system.
  */
-export const timestampsShield = {
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-        .defaultNow()
-        .$onUpdate(() => new Date())
-        .notNull(),
-};
-
 export const softDeleteShield = {
     deletedAt: timestamp("deleted_at"),
 };
@@ -31,7 +23,11 @@ export const coreColumns = {
     id: text("id")
         .primaryKey()
         .$defaultFn(() => crypto.randomUUID()),
-    ...timestampsShield,
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+        .defaultNow()
+        .$onUpdate(() => new Date())
+        .notNull(),
 };
 
 export type CoreColumns = typeof coreColumns;

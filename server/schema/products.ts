@@ -4,7 +4,7 @@ import { categorias } from "./categorias";
 import { marcas } from "./marca";
 import { unidades } from "./unidad";
 import { proveedor } from "./proveedor";
-import { sucursal } from "./sucursal";
+// import { sucursal } from "./sucursal";
 
 export const products = coreTable("products", {
     name: text("name").notNull(),
@@ -16,15 +16,14 @@ export const products = coreTable("products", {
     igv: real("igv").default(0.18),
     image: text("image"),
     enConsignacion: boolean("en_consignacion").default(false),//si esta en consignación se no se establece el precio de compra
-    stock: integer("stock").notNull(),
-    stockMinimo: integer("stock_minimo").notNull(),
+    // el stock por sucursal vive en `stock_sucursal`
     nota: text("nota"),
     slug: text("slug").notNull(),
     categoryId: text("category_id").notNull().references(() => categorias.id),
     marcaId: text("marca_id").references(() => marcas.id),
     unidadId: text("unidad_id").references(() => unidades.id),
     proveedorId: text("proveedor_id").references(() => proveedor.id),
-    sucursalId: text("sucursal_id").references(() => sucursal.id),
+    // sucursalId: text("sucursal_id").references(() => sucursal.id),
 });
 
 export type Product = typeof products.$inferSelect;

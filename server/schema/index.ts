@@ -11,6 +11,8 @@ import { tipoComprobante } from "./tipo-comprobante";
 import { tipoDocumento } from "./tipo-documento";
 import { tipoPago } from "./tipo-pago";
 import { unidades } from "./unidad";
+import { estadoTraslado, traslado, trasladoDetalle } from "./traslado";
+import { stockSucursal } from "./stock-sucursal";
 
 export default {
     users,
@@ -31,4 +33,8 @@ export default {
     ingresos,
     estadoIngresoEnum,
     caja,
+    traslado,
+    trasladoDetalle,
+    estadoTraslado,
+    stockSucursal,
 }

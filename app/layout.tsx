@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-// import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Ubuntu, Roboto } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import Provider from "./providers/provider";
 
-// const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
+const ubuntu = Ubuntu({ subsets: ['latin'], variable: '--font-sans', weight: ['300', '400', '500', '700'] });
+
 
 // const geistSans = Geist({
 //   variable: "--font-geist-sans",
@@ -24,8 +25,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
-      className={cn("h-full", "antialiased")}
+      lang="es"
+      className={cn("h-full", "antialiased", ubuntu.className)}
     >
       <body className="min-h-full flex flex-col">
         <Provider>
