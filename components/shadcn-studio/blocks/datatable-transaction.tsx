@@ -1,15 +1,13 @@
 'use client'
 
-import { useState } from 'react'
-
-import type { ColumnDef, PaginationState } from '@tanstack/react-table'
+import type { ColumnDef } from '@tanstack/react-table'
 import {
+  columnVisibilityFeature,
+  createPaginatedRowModel,
   flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable
+  rowPaginationFeature,
+  tableFeatures,
+  useTable
 } from '@tanstack/react-table'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -38,7 +36,13 @@ export type Item = {
   paidBy: 'mastercard' | 'visa'
 }
 
-export const columns: ColumnDef<Item>[] = [
+const features = tableFeatures({
+  rowPaginationFeature,
+  columnVisibilityFeature,
+  paginatedRowModel: createPaginatedRowModel()
+})
+
+export const columns: ColumnDef<typeof features, Item>[] = [
   {
     accessorKey: 'name',
     header: 'Customer',
@@ -95,34 +99,27 @@ export const columns: ColumnDef<Item>[] = [
     id: 'actions',
     header: () => 'Actions',
     cell: () => <RowActions />,
-    size: 60,
     enableHiding: false
   }
 ]
 
 const TransactionDatatable = ({ data }: { data: Item[] }) => {
-  const pageSize = 5
+  const table = useTable(
+    {
+      features,
+      data,
+      columns,
+      initialState: {
+        pagination: { pageIndex: 0, pageSize: 5 }
+      }
+    },
+    state => ({ pagination: state.pagination })
+  )
 
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: pageSize
-  })
-
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onPaginationChange: setPagination,
-    state: {
-      pagination
-    }
-  })
+  const { pageIndex, pageSize } = table.state.pagination
 
   const { pages, showLeftEllipsis, showRightEllipsis } = usePagination({
-    currentPage: table.getState().pagination.pageIndex + 1,
+    currentPage: pageIndex + 1,
     totalPages: table.getPageCount(),
     paginationItemsToDisplay: 2
   })
@@ -147,7 +144,7 @@ const TransactionDatatable = ({ data }: { data: Item[] }) => {
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map(row => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                <TableRow key={row.id}>
                   {row.getVisibleCells().map(cell => (
                     <TableCell key={cell.id} className='first:pl-4'>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -170,15 +167,8 @@ const TransactionDatatable = ({ data }: { data: Item[] }) => {
         <p className='text-muted-foreground text-sm whitespace-nowrap' aria-live='polite'>
           Showing{' '}
           <span>
-            {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
-            {Math.min(
-              Math.max(
-                table.getState().pagination.pageIndex * table.getState().pagination.pageSize +
-                  table.getState().pagination.pageSize,
-                0
-              ),
-              table.getRowCount()
-            )}
+            {pageIndex * pageSize + 1} to{' '}
+            {Math.min(Math.max(pageIndex * pageSize + pageSize, 0), table.getRowCount())}
           </span>{' '}
           of <span>{table.getRowCount().toString()} entries</span>
         </p>
@@ -206,7 +196,7 @@ const TransactionDatatable = ({ data }: { data: Item[] }) => {
               )}
 
               {pages.map(page => {
-                const isActive = page === table.getState().pagination.pageIndex + 1
+                const isActive = page === pageIndex + 1
 
                 return (
                   <PaginationItem key={page}>

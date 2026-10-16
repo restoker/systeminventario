@@ -49,18 +49,15 @@ import {
     ReceiptIcon,
     DollarSignIcon,
     FileTextIcon,
-    CalendarClockIcon,
-    SquareActivityIcon,
     PackageIcon,
     TagsIcon,
     BookmarkIcon,
     ScaleIcon,
-    TruckIcon,
-    StoreIcon,
     UsersIcon,
     LanguagesIcon,
     UserIcon,
     HardDriveIcon,
+    SettingsIcon,
 } from 'lucide-react';
 
 // Icono personalizado para Consignación (Portapapeles con gráfica de barras)
@@ -145,11 +142,11 @@ export const adminRoutes: Record<string, NavItem[]> = {
     Venta: [
         {
             title: 'Productos',
-            url: '/ventas/nueva',
+            url: '/dashboard/productos',
             icon: ShoppingCartIcon,
         },
         {
-            title: 'POS',
+            title: 'Punto de venta',
             url: '/dashboard/ventas',
             icon: ReceiptIcon,
         },
@@ -162,6 +159,21 @@ export const adminRoutes: Record<string, NavItem[]> = {
             title: 'Equipo POS',
             url: '/dashboard/pos-team',
             icon: HardDriveIcon,
+        },
+        {
+            title: 'Vendedores',
+            url: '/dashboard/pos-team',
+            icon: UserIcon,
+        },
+        {
+            title: 'Tiendas',
+            url: '/dashboard/pos-team',
+            icon: Building2Icon,
+        },
+        {
+            title: 'Configuración',
+            url: '/dashboard/pos-team',
+            icon: SettingsIcon,
         },
     ],
     Reportes: [
@@ -196,11 +208,6 @@ export const adminRoutes: Record<string, NavItem[]> = {
             title: 'Proveedores',
             url: '/dashboard/proveedores',
             icon: ScaleIcon,
-        },
-        {
-            title: 'Sucursales',
-            url: '/dashboard/sucursales',
-            icon: TruckIcon,
         },
         {
             title: 'Usuarios',

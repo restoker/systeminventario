@@ -17,11 +17,11 @@ export default async function Register() {
                 <div className="flex h-full flex-col justify-center overflow-y-auto rounded-xl border border-black/15 bg-white px-6 py-6 sm:px-10 lg:px-12 dark:border-white/10 dark:bg-[#0a0a0a]">
                     <div className="mx-auto w-full max-w-md">
                         <div>
-                            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl lg:text-[34px] lg:leading-tight text-black dark:text-white">
-                                Create an account
+                            <h1 className="animate-rise text-2xl font-semibold tracking-tight sm:text-3xl lg:text-[34px] lg:leading-tight text-black motion-reduce:animate-none dark:text-white">
+                                Crea tu cuenta
                             </h1>
-                            <p className="mt-1 text-sm text-black/60 dark:text-white/55 sm:text-base">
-                                Brainstorm in chat, build in cowork
+                            <p className="mt-1 animate-rise text-sm text-black/60 [animation-delay:80ms] motion-reduce:animate-none dark:text-white/55 sm:text-base">
+                                Un acceso para registrar entradas, salidas y stock.
                             </p>
                         </div>
 
@@ -48,10 +48,10 @@ export default async function Register() {
                     />
 
                     <div className="relative z-10 flex h-full w-full flex-col justify-between">
-                        <h2 className="max-w-md text-4xl font-medium tracking-tight text-white lg:text-5xl xl:text-6xl lg:leading-[1.02]">
-                            Think fast,
+                        <h2 className="max-w-md animate-rise text-4xl font-medium tracking-tight text-white [animation-delay:300ms] motion-reduce:animate-none lg:text-5xl xl:text-6xl lg:leading-[1.02]">
+                            Tu stock,
                             <br />
-                            Build faster
+                            siempre al día
                         </h2>
 
 
