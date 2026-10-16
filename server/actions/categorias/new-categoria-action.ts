@@ -11,7 +11,7 @@ import { revalidatePath } from "next/cache";
 
 export const newCategoriaAction = actionClient
     .inputSchema(newCategoriaScham)
-    .action(async ({ parsedInput: { nombre } }) => {
+    .action(async ({ parsedInput: { nombre, id } }) => {
         try {
             const session = await api.getSession({ headers: await headers() });
             if (!session?.user) return { ok: false, msg: "No tienes permiso para crear categorías" };
@@ -20,12 +20,22 @@ export const newCategoriaAction = actionClient
                 where: { nombre }
             })
 
-            if (existeCategoria) return { ok: false, msg: "La categoría ya existe" }
+            if (existeCategoria && existeCategoria.id !== id) return { ok: false, msg: "La categoría ya existe" }
 
-            const result = await db.insert(categorias).values({
+            if (id) {
+                await db.update(categorias).set({
+                    nombre,
+                }).where(eq(categorias.id, id));
+
+                revalidatePath(`/dashboard/productos`);
+                return { ok: true, msg: "Categoría actualizada exitosamente" };
+            }
+
+            await db.insert(categorias).values({
                 nombre,
-            })
-            revalidatePath("/dashboard/categorias");
+            });
+
+            revalidatePath(`/dashboard/productos`);
             return { ok: true, msg: "Categoría creada exitosamente" }
         } catch (e) {
             console.error(e)

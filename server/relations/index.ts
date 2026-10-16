@@ -10,8 +10,9 @@ import { tipoComprobante } from "../schema/tipo-comprobante";
 import { tipoPago } from "../schema/tipo-pago";
 import { traslado, trasladoDetalle } from "../schema/traslado";
 import { stockSucursal } from "../schema/stock-sucursal";
+import { venta } from "../schema/venta";
 
-export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal }, (r) => ({
+export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta }, (r) => ({
     users: {
         sessions: r.many.sessions({
             from: r.users.id,
@@ -61,6 +62,10 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
             from: r.products.id,
             to: r.stockSucursal.productoId,
         }),
+        // kardexs: r.many.kardex({
+        //     from: r.products.id,
+        //     to: r.kardex.productoId,
+        // })
     },
     marcas: {
         products: r.many.products({

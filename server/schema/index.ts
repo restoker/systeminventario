@@ -13,6 +13,7 @@ import { tipoPago } from "./tipo-pago";
 import { unidades } from "./unidad";
 import { estadoTraslado, traslado, trasladoDetalle } from "./traslado";
 import { stockSucursal } from "./stock-sucursal";
+import { venta } from "./venta";
 
 export default {
     users,
@@ -37,4 +38,5 @@ export default {
     trasladoDetalle,
     estadoTraslado,
     stockSucursal,
+    venta,
 }
