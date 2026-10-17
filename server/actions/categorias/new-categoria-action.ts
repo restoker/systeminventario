@@ -1,16 +1,16 @@
 'use server'
 
 import { actionClient } from "@/lib/safe-action";
-import { newCategoriaScham } from "@/types/new-categoria-schema";
 import db from "../../index";
 import { categorias } from "../../schema/categorias";
 import { eq } from "drizzle-orm";
 import { api } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { newCategoriaSchema } from "@/types/new-categoria-schema";
 
 export const newCategoriaAction = actionClient
-    .inputSchema(newCategoriaScham)
+    .inputSchema(newCategoriaSchema)
     .action(async ({ parsedInput: { nombre, id } }) => {
         try {
             const session = await api.getSession({ headers: await headers() });

@@ -24,6 +24,8 @@
     "@tanstack/react-table": "^9.2.8",
     "better-auth": "^1.7.7",
     "class-variance-authority": "^0.7.1",
+    "cloudinary": "^2.11.0",
+    "cloudinary-build-url": "^0.2.4",
     "cn": "^0.4.0",
     "dotenv": "^18.0.5",
     "drizzle-orm": "1.0.0-rc.4",

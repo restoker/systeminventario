@@ -8,7 +8,7 @@ export const devolucion = coreTable('devolucion', {
     cantidad: integer('cantidad').notNull(),
     fecha: timestamp('fecha').notNull().defaultNow(),
     motivo: text('motivo').notNull(),
-    sucursalId: integer('sucursal_id').notNull().references(() => sucursal.id),
-    ventaId: integer('venta_id').notNull().references(() => venta.id),
-    productoId: integer('producto_id').notNull().references(() => products.id),
+    sucursalId: text('sucursal_id').notNull().references(() => sucursal.id),
+    ventaId: text('venta_id').notNull().references(() => venta.id),
+    productoId: text('producto_id').notNull().references(() => products.id),
 })

@@ -11,8 +11,10 @@ import { tipoPago } from "../schema/tipo-pago";
 import { traslado, trasladoDetalle } from "../schema/traslado";
 import { stockSucursal } from "../schema/stock-sucursal";
 import { venta } from "../schema/venta";
+import { kardex } from "../schema/kardex";
+import { igv } from "../schema/igv";
 
-export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta }, (r) => ({
+export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta, kardex, igv }, (r) => ({
     users: {
         sessions: r.many.sessions({
             from: r.users.id,
@@ -62,10 +64,10 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
             from: r.products.id,
             to: r.stockSucursal.productoId,
         }),
-        // kardexs: r.many.kardex({
-        //     from: r.products.id,
-        //     to: r.kardex.productoId,
-        // })
+        kardexs: r.many.kardex({
+            from: r.products.id,
+            to: r.kardex.productoId,
+        }),
     },
     marcas: {
         products: r.many.products({
@@ -83,6 +85,10 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
         stocks: r.many.stockSucursal({
             from: r.sucursal.id,
             to: r.stockSucursal.sucursalId,
+        }),
+        movimientosKardex: r.many.kardex({
+            from: r.sucursal.id,
+            to: r.kardex.sucursalId,
         }),
         trasladosEnviados: r.many.traslado({
             from: r.sucursal.id,
@@ -139,6 +145,24 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
         producto: r.one.products({
             from: r.trasladoDetalle.productoId,
             to: r.products.id,
+        }),
+    },
+    kardex: {
+        producto: r.one.products({
+            from: r.kardex.productoId,
+            to: r.products.id,
+        }),
+        sucursal: r.one.sucursal({
+            from: r.kardex.sucursalId,
+            to: r.sucursal.id,
+        }),
+        usuario: r.one.users({
+            from: r.kardex.usuarioId,
+            to: r.users.id,
+        }),
+        movimientoRevertido: r.one.kardex({
+            from: r.kardex.movimientoRevertidoId,
+            to: r.kardex.id,
         }),
     },
 }));

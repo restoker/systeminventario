@@ -7,16 +7,17 @@ export const productoSchema = z.object({
     precioCompra: z.number().min(0, "El precio debe ser mayor o igual a 0"),
     precioVenta: z.number().min(1, "El precio debe ser mayor a 0"),
     // stock: z.number().min(0, "El stock debe ser mayor o igual a 0"),
-    image: z.string(),
+    image: z.string().optional(),
     codigo: z.string().min(3, "El código de barras debe tener al menos 3 caracteres").max(100, "El código de barras debe tener menos de 100 caracteres"),
-    enConsignacion: z.boolean().default(false),//si esta en consignación se no se establece el precio de compra
+    enConsignacion: z.boolean(),
     // el stock por sucursal vive en `stock_sucursal`
-    nota: z.string().min(3, "La nota debe tener al menos 3 caracteres").max(100, "La nota debe tener menos de 100 caracteres"),
+    nota: z.string().optional(),
     // slug: z.string().min(3, "El slug debe tener al menos 3 caracteres").max(100, "El slug debe tener menos de 100 caracteres"),
-    categoryId: z.string().min(3, "La categoría debe tener al menos 3 caracteres").max(100, "La categoría debe tener menos de 100 caracteres"),
-    marcaId: z.string().min(3, "La marca debe tener al menos 3 caracteres").max(100, "La marca debe tener menos de 100 caracteres"),
-    unidadId: z.string().min(3, "La unidad debe tener al menos 3 caracteres").max(100, "La unidad debe tener menos de 100 caracteres"),
-    proveedorId: z.string().min(3, "El proveedor debe tener al menos 3 caracteres").max(100, "El proveedor debe tener menos de 100 caracteres"),
+    igv: z.string().min(1, "El IGV es obligatorio"),
+    categoryId: z.string().min(3, "La categoría es obligatoria").max(100, "La categoría debe tener menos de 100 caracteres"),
+    marcaId: z.string().min(1, "La marca es obligatoria"),
+    unidadId: z.string().min(3, "La unidad es obligatoria").max(100, "La unidad debe tener menos de 100 caracteres"),
+    proveedorId: z.string().min(1, "El proveedor es obligatorio"),
 });
 
 export type ProductSchema = z.infer<typeof productoSchema>;

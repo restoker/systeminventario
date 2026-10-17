@@ -14,6 +14,8 @@ import { unidades } from "./unidad";
 import { estadoTraslado, traslado, trasladoDetalle } from "./traslado";
 import { stockSucursal } from "./stock-sucursal";
 import { venta } from "./venta";
+import { kardex, motivoKardexEnum, origenKardexEnum, tipoMovimientoKardexEnum } from "./kardex";
+import { igv } from "./igv";
 
 export default {
     users,
@@ -39,4 +41,9 @@ export default {
     estadoTraslado,
     stockSucursal,
     venta,
+    kardex,
+    tipoMovimientoKardexEnum,
+    motivoKardexEnum,
+    origenKardexEnum,
+    igv,
 }

@@ -111,6 +111,16 @@ export const softDeleteTable = createTableFactory({
 });
 
 /**
+ * 5.1 Immutable (append-only) Table Factory
+ * Injects only `id` and `createdAt`. Para libros/ledgers (ej. kardex) cuyos
+ * registros nunca se actualizan ni eliminan: se corrigen con contramovimientos.
+ */
+export const immutableTable = createTableFactory({
+    id: coreColumns.id,
+    createdAt: coreColumns.createdAt,
+});
+
+/**
  * 6. Aliases matching the file naming convention
  */
 export const communityShieldTable = coreTable;
