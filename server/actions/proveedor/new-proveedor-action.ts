@@ -36,6 +36,7 @@ export const newProveedorAction = actionClient
                 ...(direccion && { direccion: direccion.toLowerCase() }),
             });
             revalidatePath("/proveedores");
+            revalidatePath("/dashboard/productos/new");
             return { ok: true, msg: "Proveedor creado exitosamente" };
         } catch (e) {
             console.log(e);

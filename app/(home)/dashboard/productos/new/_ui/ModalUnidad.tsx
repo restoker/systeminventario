@@ -50,9 +50,16 @@ export default function ModalUnidad({ isOpen, onClose, onSuccess }: ModalUnidadP
     const { execute, status } = useAction(newUnidadAction, {
         onSuccess: ({ data }) => {
             if (data.ok) {
-                toast.success(data.msg)
+                toast.success(data.msg);
+                onClose();
+                reset();
+            } else {
+                toast.error(data.msg);
             }
-        }
+        },
+        onError: (error) => {
+            toast.error('Error al crear la unidad');
+        },
     })
 
     useEffect(() => {

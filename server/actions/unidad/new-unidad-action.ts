@@ -29,6 +29,7 @@ export const newUnidadAction = actionClient
                 }).where(eq(unidades.id, id));
 
                 revalidatePath("/dashboard/productos");
+                revalidatePath("/dashboard/productos/new");
                 return { ok: true, msg: "Unidad actualizada exitosamente" }
             }
 
@@ -38,6 +39,7 @@ export const newUnidadAction = actionClient
             })
 
             revalidatePath("/dashboard/productos");
+            revalidatePath("/dashboard/productos/new");
             return { ok: true, msg: "Unidad creada exitosamente" }
         } catch (e) {
             console.error(e)

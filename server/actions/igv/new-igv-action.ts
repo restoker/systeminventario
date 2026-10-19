@@ -29,6 +29,7 @@ export const newIgvAction = actionClient
                 }).where(eq(igv.id, id)).returning();
 
                 revalidatePath(`/dashboard/productos`);
+                revalidatePath(`/dashboard/productos/new`);
                 return { ok: true, msg: "IGV actualizado exitosamente", igv: updated };
             }
 
@@ -38,6 +39,7 @@ export const newIgvAction = actionClient
             }).returning();
 
             revalidatePath(`/dashboard/productos`);
+            revalidatePath(`/dashboard/productos/new`);
             return { ok: true, msg: "IGV creado exitosamente", igv: created };
         } catch (e) {
             console.error(e);

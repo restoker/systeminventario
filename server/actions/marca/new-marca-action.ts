@@ -23,6 +23,7 @@ export const newMarcaAction = actionClient
                     ...(imagen && { imagen: imagen }),
                 }).where(eq(marcas.id, id));
                 revalidatePath("/dashboard/productos");
+                revalidatePath("/dashboard/productos/new");
                 return { ok: true, msg: "Marca actualizada exitosamente" };
             }
             await db.insert(marcas).values({
@@ -32,6 +33,7 @@ export const newMarcaAction = actionClient
                 imagen: imagen,
             });
             revalidatePath("/dashboard/productos");
+            revalidatePath("/dashboard/productos/new");
             return { ok: true, msg: "Marca creada exitosamente" };
         } catch (error) {
             // console.log(error);

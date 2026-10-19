@@ -52,80 +52,16 @@ interface Props {
 type ModalType = 'categoria' | 'marca' | 'unidad' | 'igv' | 'sucursal' | 'proveedor' | null;
 
 export default function FormNewProduct({
-    categorias: initialCategorias = [],
-    sucursales: initialSucursales = [],
-    igv: initialIgv = [],
-    proveedor: initialProveedor = [],
-    unidad: initialUnidad = [],
-    marcas: initialMarcas = [],
+    categorias = [],
+    sucursales = [],
+    igv = [],
+    proveedor = [],
+    unidad = [],
+    marcas = [],
 }: Props) {
     const router = useRouter();
 
-    // Fallbacks si la base de datos aún no tiene registros sembrados
-    const [categoriasList, setCategoriasList] = useState<Categoria[]>(() =>
-        initialCategorias.length > 0
-            ? initialCategorias
-            : [
-                { id: 'cat-1', nombre: 'Abarrotes y Alimentos', createdAt: new Date(), updatedAt: new Date() },
-                { id: 'cat-2', nombre: 'Bebidas y Licores', createdAt: new Date(), updatedAt: new Date() },
-                { id: 'cat-3', nombre: 'Limpieza y Hogar', createdAt: new Date(), updatedAt: new Date() },
-                { id: 'cat-4', nombre: 'Tecnología y Electrónica', createdAt: new Date(), updatedAt: new Date() },
-            ]
-    );
-
-    const [marcasList, setMarcasList] = useState<Marca[]>(() =>
-        initialMarcas.length > 0
-            ? initialMarcas
-            : [
-                { id: 'mar-1', nombre: 'Genérica / Sin Marca', descripcion: null, imagen: null, pais: null, createdAt: new Date(), updatedAt: new Date() },
-                { id: 'mar-2', nombre: 'Gloria', descripcion: null, imagen: null, pais: 'Perú', createdAt: new Date(), updatedAt: new Date() },
-                { id: 'mar-3', nombre: 'Nestlé', descripcion: null, imagen: null, pais: 'Suiza', createdAt: new Date(), updatedAt: new Date() },
-                { id: 'mar-4', nombre: 'Samsung', descripcion: null, imagen: null, pais: 'Corea', createdAt: new Date(), updatedAt: new Date() },
-            ]
-    );
-
-    const [unidadesList, setUnidadesList] = useState<Unidad[]>(() =>
-        initialUnidad.length > 0
-            ? initialUnidad
-            : [
-                { id: 'und-1', nombre: 'Unidad', abreviatura: 'NIU', createdAt: new Date(), updatedAt: new Date() },
-                { id: 'und-2', nombre: 'Kilogramo', abreviatura: 'KGM', createdAt: new Date(), updatedAt: new Date() },
-                { id: 'und-3', nombre: 'Caja', abreviatura: 'BX', createdAt: new Date(), updatedAt: new Date() },
-                { id: 'und-4', nombre: 'Litro', abreviatura: 'LTR', createdAt: new Date(), updatedAt: new Date() },
-                { id: 'und-5', nombre: 'Paquete', abreviatura: 'PK', createdAt: new Date(), updatedAt: new Date() },
-            ]
-    );
-
-    const [igvList, setIgvList] = useState<Igv[]>(() =>
-        initialIgv.length > 0
-            ? initialIgv
-            : [
-                { id: 'igv-1', value: 0.18, isActive: true, createdAt: new Date(), updatedAt: new Date() },
-                { id: 'igv-2', value: 0.10, isActive: true, createdAt: new Date(), updatedAt: new Date() },
-                { id: 'igv-3', value: 0.0, isActive: true, createdAt: new Date(), updatedAt: new Date() },
-            ]
-    );
-
-    const [sucursalesList, setSucursalesList] = useState<Sucursal[]>(() =>
-        initialSucursales.length > 0
-            ? initialSucursales
-            : [
-                { id: 'suc-1', codigo: 'SUC-01', nombre: 'Almacén Principal (Central)', telefono: '987654321', direccion: 'Av. Industrial 1234', activo: true, razonSocial: 'Mi Empresa S.A.C.', ruc: '20123456789', email: 'almacen@empresa.com', createdAt: new Date(), updatedAt: new Date() },
-                { id: 'suc-2', codigo: 'SUC-02', nombre: 'Sucursal Miraflores', telefono: '987654322', direccion: 'Av. Larco 540', activo: true, razonSocial: 'Mi Empresa S.A.C.', ruc: '20123456789', email: 'miraflores@empresa.com', createdAt: new Date(), updatedAt: new Date() },
-            ]
-    );
-
-    const [proveedoresList, setProveedoresList] = useState<Proveedor[]>(() =>
-        initialProveedor.length > 0
-            ? initialProveedor
-            : [
-                { id: 'prov-1', nombre: 'Distribuidora Central S.A.', razonSocial: 'Distribuidora Central S.A.', numeroDocumento: '20512345678', telefono: '987654321', direccion: 'Av. Industrial 500', activo: true, email: 'contacto@central.com', createdAt: new Date(), updatedAt: new Date() },
-                { id: 'prov-2', nombre: 'Importadora del Sur E.I.R.L.', razonSocial: 'Importadora del Sur E.I.R.L.', numeroDocumento: '20601234567', telefono: '987654322', direccion: 'Jr. Comercio 320', activo: true, email: 'ventas@delsur.com', createdAt: new Date(), updatedAt: new Date() },
-            ]
-    );
-
     // Estados auxiliares de inventario
-    const [sucursalId, setSucursalId] = useState('');
     const [stockMinimo, setStockMinimo] = useState('');
     const [cantidadInicial, setCantidadInicial] = useState('');
 
@@ -144,7 +80,8 @@ export default function FormNewProduct({
             marcaId: '',
             unidadId: '',
             proveedorId: '',
-            igv: ''
+            igv: '',
+            sucursalId: '',
         },
         mode: 'onTouched',
     });
@@ -216,8 +153,8 @@ export default function FormNewProduct({
             unidadId: '',
             proveedorId: '',
             igv: '',
+            sucursalId: '',
         });
-        setSucursalId('');
         setStockMinimo('');
         setCantidadInicial('');
         toast.info('Formulario restablecido');
@@ -436,15 +373,19 @@ export default function FormNewProduct({
                                         control={form.control}
                                         name='categoryId'
                                         render={({ field: { value, onChange } }) => {
+                                            const noHayCategorias = categorias.length === 0;
                                             return (
                                                 <select
                                                     id="categoria"
                                                     value={value}
                                                     onChange={onChange}
-                                                    className={`${selectBaseClass} ${form.formState.errors.categoryId ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
+                                                    disabled={noHayCategorias}
+                                                    className={`${selectBaseClass} ${noHayCategorias ? 'opacity-50 cursor-not-allowed bg-black/5 dark:bg-white/5' : ''} ${form.formState.errors.categoryId ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
                                                 >
-                                                    <option value="">Seleccionar categoría...</option>
-                                                    {categoriasList.map((cat) => (
+                                                    <option value="">
+                                                        {noHayCategorias ? 'No hay categorías disponibles' : 'Seleccionar categoría...'}
+                                                    </option>
+                                                    {categorias.map((cat) => (
                                                         <option key={cat.id} value={cat.id}>
                                                             {cat.nombre}
                                                         </option>
@@ -465,12 +406,17 @@ export default function FormNewProduct({
                                     <Plus className="size-4" />
                                 </button>
                             </div>
-                            {form.formState.errors.categoryId && (
+                            {categorias.length === 0 ? (
+                                <p className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                                    <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+                                    No hay ninguna categoría agregada
+                                </p>
+                            ) : form.formState.errors.categoryId ? (
                                 <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
                                     <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
                                     {form.formState.errors.categoryId.message}
                                 </p>
-                            )}
+                            ) : null}
                         </div>
 
                         {/* Select Marca */}
@@ -485,15 +431,19 @@ export default function FormNewProduct({
                                         control={form.control}
                                         name='marcaId'
                                         render={({ field: { value, onChange } }) => {
+                                            const noHayMarcas = marcas.length === 0;
                                             return (
                                                 <select
                                                     id="marca"
                                                     value={value}
                                                     onChange={onChange}
-                                                    className={`${selectBaseClass} ${form.formState.errors.marcaId ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
+                                                    disabled={noHayMarcas}
+                                                    className={`${selectBaseClass} ${noHayMarcas ? 'opacity-50 cursor-not-allowed bg-black/5 dark:bg-white/5' : ''} ${form.formState.errors.marcaId ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
                                                 >
-                                                    <option value="">Seleccionar marca...</option>
-                                                    {marcasList.map((marca) => (
+                                                    <option value="">
+                                                        {noHayMarcas ? 'No hay marcas disponibles' : 'Seleccionar marca...'}
+                                                    </option>
+                                                    {marcas.map((marca) => (
                                                         <option key={marca.id} value={marca.id}>
                                                             {marca.nombre} {marca.pais ? `(${marca.pais})` : ''}
                                                         </option>
@@ -514,12 +464,17 @@ export default function FormNewProduct({
                                     <Plus className="size-4" />
                                 </button>
                             </div>
-                            {form.formState.errors.marcaId && (
+                            {marcas.length === 0 ? (
+                                <p className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                                    <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+                                    No hay ninguna marca agregada
+                                </p>
+                            ) : form.formState.errors.marcaId ? (
                                 <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
                                     <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
                                     {form.formState.errors.marcaId.message}
                                 </p>
-                            )}
+                            ) : null}
                         </div>
 
                         {/* Select Unidad (SUNAT / Base) */}
@@ -534,15 +489,19 @@ export default function FormNewProduct({
                                         control={form.control}
                                         name='unidadId'
                                         render={({ field: { value, onChange } }) => {
+                                            const noHayUnidades = unidad.length === 0;
                                             return (
                                                 <select
                                                     id="unidad"
                                                     value={value}
                                                     onChange={onChange}
-                                                    className={`${selectBaseClass} ${form.formState.errors.unidadId ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
+                                                    disabled={noHayUnidades}
+                                                    className={`${selectBaseClass} ${noHayUnidades ? 'opacity-50 cursor-not-allowed bg-black/5 dark:bg-white/5' : ''} ${form.formState.errors.unidadId ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
                                                 >
-                                                    <option value="">Seleccionar unidad...</option>
-                                                    {unidadesList.map((u) => (
+                                                    <option value="">
+                                                        {noHayUnidades ? 'No hay unidades disponibles' : 'Seleccionar unidad...'}
+                                                    </option>
+                                                    {unidad.map((u) => (
                                                         <option key={u.id} value={u.id}>
                                                             {u.nombre} ({u.abreviatura})
                                                         </option>
@@ -563,12 +522,17 @@ export default function FormNewProduct({
                                     <Plus className="size-4" />
                                 </button>
                             </div>
-                            {form.formState.errors.unidadId && (
+                            {unidad.length === 0 ? (
+                                <p className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                                    <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+                                    No hay ninguna unidad agregada
+                                </p>
+                            ) : form.formState.errors.unidadId ? (
                                 <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
                                     <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
                                     {form.formState.errors.unidadId.message}
                                 </p>
-                            )}
+                            ) : null}
                         </div>
 
                         {/* Select Proveedor */}
@@ -583,15 +547,19 @@ export default function FormNewProduct({
                                         control={form.control}
                                         name='proveedorId'
                                         render={({ field: { value, onChange } }) => {
+                                            const noHayProveedores = proveedor.length === 0;
                                             return (
                                                 <select
                                                     id="proveedor"
                                                     value={value}
                                                     onChange={onChange}
-                                                    className={`${selectBaseClass} ${form.formState.errors.proveedorId ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
+                                                    disabled={noHayProveedores}
+                                                    className={`${selectBaseClass} ${noHayProveedores ? 'opacity-50 cursor-not-allowed bg-black/5 dark:bg-white/5' : ''} ${form.formState.errors.proveedorId ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
                                                 >
-                                                    <option value="">Seleccionar proveedor...</option>
-                                                    {proveedoresList.map((prov) => (
+                                                    <option value="">
+                                                        {noHayProveedores ? 'No hay proveedores disponibles' : 'Seleccionar proveedor...'}
+                                                    </option>
+                                                    {proveedor.map((prov) => (
                                                         <option key={prov.id} value={prov.id}>
                                                             {prov.nombre} {prov.numeroDocumento ? `(${prov.numeroDocumento})` : ''}
                                                         </option>
@@ -612,35 +580,52 @@ export default function FormNewProduct({
                                     <Plus className="size-4" />
                                 </button>
                             </div>
-                            {form.formState.errors.proveedorId && (
+                            {proveedor.length === 0 ? (
+                                <p className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                                    <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+                                    No hay ningún proveedor agregado
+                                </p>
+                            ) : form.formState.errors.proveedorId ? (
                                 <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
                                     <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
                                     {form.formState.errors.proveedorId.message}
                                 </p>
-                            )}
+                            ) : null}
                         </div>
 
                         {/* Select Sucursal */}
                         <div className="sm:col-span-2">
                             <label htmlFor="sucursal" className="block text-xs font-semibold uppercase tracking-wider text-black/70 dark:text-white/70 mb-1.5">
-                                Sucursal / Almacén Inicial
+                                Sucursal / Almacén Inicial <span className="text-red-500">*</span>
                             </label>
                             <div className="flex gap-2">
                                 <div className="group relative flex-1">
                                     <Store aria-hidden="true" className={iconBaseClass} />
-                                    <select
-                                        id="sucursal"
-                                        value={sucursalId}
-                                        onChange={(e) => setSucursalId(e.target.value)}
-                                        className={selectBaseClass}
-                                    >
-                                        <option value="">Seleccionar sucursal...</option>
-                                        {sucursalesList.map((suc) => (
-                                            <option key={suc.id} value={suc.id}>
-                                                {suc.nombre} ({suc.codigo})
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <Controller
+                                        control={form.control}
+                                        name='sucursalId'
+                                        render={({ field: { value, onChange } }) => {
+                                            const noHaySucursales = sucursales.length === 0;
+                                            return (
+                                                <select
+                                                    id="sucursal"
+                                                    value={value}
+                                                    onChange={onChange}
+                                                    disabled={noHaySucursales}
+                                                    className={`${selectBaseClass} ${noHaySucursales ? 'opacity-50 cursor-not-allowed bg-black/5 dark:bg-white/5' : ''} ${form.formState.errors.sucursalId ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
+                                                >
+                                                    <option value="">
+                                                        {noHaySucursales ? 'No hay sucursales disponibles' : 'Seleccionar sucursal...'}
+                                                    </option>
+                                                    {sucursales.map((suc) => (
+                                                        <option key={suc.id} value={suc.id}>
+                                                            {suc.nombre} ({suc.codigo})
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            )
+                                        }}
+                                    />
                                     <ChevronDown aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-3 my-auto size-4 text-black/40 dark:text-white/40" />
                                 </div>
                                 <button
@@ -653,6 +638,17 @@ export default function FormNewProduct({
                                     <Plus className="size-4" />
                                 </button>
                             </div>
+                            {sucursales.length === 0 ? (
+                                <p className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                                    <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+                                    No hay ninguna sucursal agregada
+                                </p>
+                            ) : form.formState.errors.sucursalId ? (
+                                <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
+                                    <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+                                    {form.formState.errors.sucursalId.message}
+                                </p>
+                            ) : null}
                         </div>
                     </div>
                 </section>
@@ -768,15 +764,19 @@ export default function FormNewProduct({
                                         control={form.control}
                                         name='igv'
                                         render={({ field: { value, onChange } }) => {
+                                            const noHayIgv = igv.length === 0;
                                             return (
                                                 <select
                                                     id="igv"
                                                     value={value}
                                                     onChange={onChange}
-                                                    className={`${selectBaseClass} ${form.formState.errors.igv ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
+                                                    disabled={noHayIgv}
+                                                    className={`${selectBaseClass} ${noHayIgv ? 'opacity-50 cursor-not-allowed bg-black/5 dark:bg-white/5' : ''} ${form.formState.errors.igv ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
                                                 >
-                                                    <option value="">Seleccionar IGV...</option>
-                                                    {igvList.map((item) => {
+                                                    <option value="">
+                                                        {noHayIgv ? 'No hay IGV disponible' : 'Seleccionar IGV...'}
+                                                    </option>
+                                                    {igv.map((item) => {
                                                         const pct = item.value < 1 ? item.value * 100 : item.value;
                                                         return (
                                                             <option key={item.id} value={item.id}>
@@ -800,12 +800,17 @@ export default function FormNewProduct({
                                     <Plus className="size-4" />
                                 </button>
                             </div>
-                            {form.formState.errors.igv && (
+                            {igv.length === 0 ? (
+                                <p className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                                    <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+                                    No hay ningún IGV agregado
+                                </p>
+                            ) : form.formState.errors.igv ? (
                                 <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
                                     <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
                                     {form.formState.errors.igv.message}
                                 </p>
-                            )}
+                            ) : null}
                             <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
                                 Tasa tributaria aplicada para comprobantes electrónicos.
                             </p>
@@ -955,7 +960,6 @@ export default function FormNewProduct({
                 isOpen={activeModal === 'categoria'}
                 onClose={() => setActiveModal(null)}
                 onSuccess={(newCat) => {
-                    setCategoriasList((prev) => [newCat, ...prev]);
                     form.setValue('categoryId', newCat.id, { shouldValidate: true });
                     setActiveModal(null);
                 }}
@@ -965,7 +969,6 @@ export default function FormNewProduct({
                 isOpen={activeModal === 'marca'}
                 onClose={() => setActiveModal(null)}
                 onSuccess={(newMarca) => {
-                    setMarcasList((prev) => [newMarca, ...prev]);
                     form.setValue('marcaId', newMarca.id, { shouldValidate: true });
                     setActiveModal(null);
                 }}
@@ -975,7 +978,6 @@ export default function FormNewProduct({
                 isOpen={activeModal === 'unidad'}
                 onClose={() => setActiveModal(null)}
                 onSuccess={(newUnidad) => {
-                    setUnidadesList((prev) => [newUnidad, ...prev]);
                     form.setValue('unidadId', newUnidad.id, { shouldValidate: true });
                     setActiveModal(null);
                 }}
@@ -985,7 +987,6 @@ export default function FormNewProduct({
                 isOpen={activeModal === 'proveedor'}
                 onClose={() => setActiveModal(null)}
                 onSuccess={(newProv) => {
-                    setProveedoresList((prev) => [newProv, ...prev]);
                     form.setValue('proveedorId', newProv.id, { shouldValidate: true });
                     setActiveModal(null);
                 }}
@@ -995,8 +996,7 @@ export default function FormNewProduct({
                 isOpen={activeModal === 'sucursal'}
                 onClose={() => setActiveModal(null)}
                 onSuccess={(newSuc) => {
-                    setSucursalesList((prev) => [newSuc, ...prev]);
-                    setSucursalId(newSuc.id);
+                    form.setValue('sucursalId', newSuc.id, { shouldValidate: true });
                     setActiveModal(null);
                 }}
             />
@@ -1005,7 +1005,6 @@ export default function FormNewProduct({
                 isOpen={activeModal === 'igv'}
                 onClose={() => setActiveModal(null)}
                 onSuccess={(newIgv) => {
-                    setIgvList((prev) => [newIgv, ...prev]);
                     form.setValue('igv', newIgv.id, { shouldValidate: true });
                     setActiveModal(null);
                 }}

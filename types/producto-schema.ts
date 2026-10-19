@@ -18,6 +18,7 @@ export const productoSchema = z.object({
     marcaId: z.string().min(1, "La marca es obligatoria"),
     unidadId: z.string().min(3, "La unidad es obligatoria").max(100, "La unidad debe tener menos de 100 caracteres"),
     proveedorId: z.string().min(1, "El proveedor es obligatorio"),
+    sucursalId: z.string().min(1, "La sucursal es obligatoria"),
 });
 
 export type ProductSchema = z.infer<typeof productoSchema>;

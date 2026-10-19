@@ -36,6 +36,7 @@ export const newCategoriaAction = actionClient
             });
 
             revalidatePath(`/dashboard/productos`);
+            revalidatePath(`/dashboard/productos/new`);
             return { ok: true, msg: "Categoría creada exitosamente" }
         } catch (e) {
             console.error(e)
