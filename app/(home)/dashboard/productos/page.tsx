@@ -8,7 +8,6 @@ import { products } from '@/server/schema/products'
 import SidebarAux from '@/app/(home)/_ui/Sidebar'
 import { Button } from '@/components/ui/button'
 import TablaProductos from './_ui/TablaProductos'
-import type { ProductoItem } from '@/interfaces'
 
 interface PageProps {
     searchParams: Promise<{

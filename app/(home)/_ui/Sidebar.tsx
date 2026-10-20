@@ -162,7 +162,7 @@ export const adminRoutes: Record<string, NavItem[]> = {
         },
         {
             title: 'Vendedores',
-            url: '/dashboard/pos-team',
+            url: '/dashboard/vendedores',
             icon: UserIcon,
         },
         {
@@ -172,7 +172,7 @@ export const adminRoutes: Record<string, NavItem[]> = {
         },
         {
             title: 'Configuración',
-            url: '/dashboard/pos-team',
+            url: '/dashboard/configuracion',
             icon: SettingsIcon,
         },
     ],
