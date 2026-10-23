@@ -10,4 +10,11 @@ export interface Sucursal {
     activo: boolean | null;
     razonSocial: string | null;
     ruc: string | null;
+    stocks?: {
+        id: string;
+        cantidad: number;
+        stockMinimo: number;
+        productoId: string;
+        sucursalId: string;
+    }[];
 }

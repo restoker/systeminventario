@@ -1,0 +1,8 @@
+{
+  "name": "utility-screen",
+  "brief": "Pantalla 404 del sistema de inventario",
+  "allow": [
+    "few-pictures",
+    "no-footage"
+  ]
+}

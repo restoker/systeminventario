@@ -24,12 +24,13 @@ import {
     BoxesIcon,
     LayersIcon,
     Building2Icon,
-    TagIcon
+    TagIcon,
+    ImageIcon
 } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { cn } from 'cn'
 import { usePagination } from '@/hooks/use-pagination'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -64,6 +65,59 @@ const features = tableFeatures({
     rowPaginationFeature,
     columnVisibilityFeature
 })
+
+interface ProductImageProps {
+    src?: string | null
+    alt: string
+    className?: string
+    iconClassName?: string
+}
+
+function ProductImage({ src, alt, className, iconClassName }: ProductImageProps) {
+    const [imageError, setImageError] = useState(false)
+
+    // Reset error state when src changes
+    React.useEffect(() => {
+        setImageError(false)
+    }, [src])
+
+    const hasValidImage = Boolean(src && src.trim() !== '' && !imageError)
+
+    if (hasValidImage) {
+        return (
+            <div
+                className={cn(
+                    'relative overflow-hidden rounded-lg border border-border/70 bg-muted/20 shrink-0 flex items-center justify-center',
+                    className
+                )}
+            >
+                <img
+                    src={src!}
+                    alt={alt}
+                    className='size-full object-cover transition-transform duration-200'
+                    onError={() => setImageError(true)}
+                    loading='lazy'
+                />
+            </div>
+        )
+    }
+
+    return (
+        <div
+            className={cn(
+                'relative flex items-center justify-center rounded-lg border border-dashed border-border/80 bg-muted/40 text-muted-foreground/60 shrink-0 select-none shadow-2xs',
+                className
+            )}
+            title={`Sin imagen: ${alt}`}
+            aria-label='Sin imagen disponible'
+        >
+            <ImageIcon
+                className={cn('size-4 text-muted-foreground/50 stroke-[1.5]', iconClassName)}
+                aria-hidden='true'
+            />
+        </div>
+    )
+}
 
 interface TablaProductosProps {
     data: Productos[]
@@ -135,40 +189,54 @@ export default function TablaProductos({
 
     const columns: ColumnDef<typeof features, Productos>[] = [
         {
+            accessorKey: 'image',
+            header: 'Imagen',
+            cell: ({ row }) => {
+                const item = row.original
+
+                return (
+                    <button
+                        type='button'
+                        onClick={() => setSelectedProduct(item)}
+                        className='focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring rounded-lg cursor-pointer transition-transform hover:scale-105 active:scale-95 text-left shrink-0 block'
+                        title={`Ver detalles de ${item.name}`}
+                    >
+                        <ProductImage
+                            src={item.image}
+                            alt={item.name}
+                            className='size-10 shadow-2xs'
+                            iconClassName='size-4.5'
+                        />
+                    </button>
+                )
+            }
+        },
+        {
             accessorKey: 'name',
             header: 'Producto',
             cell: ({ row }) => {
                 const item = row.original
-                const initials = item.name
-                    .split(' ')
-                    .map(w => w[0])
-                    .slice(0, 2)
-                    .join('')
-                    .toUpperCase()
 
                 return (
-                    <div className='flex items-center gap-3 py-1'>
-                        <Avatar className='size-10 rounded-lg border bg-muted/40 shrink-0'>
-                            {item.image && <AvatarImage src={item.image} alt={item.name} className='object-cover' />}
-                            <AvatarFallback className='rounded-lg text-xs font-semibold text-muted-foreground'>
-                                {initials || 'PR'}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className='flex flex-col min-w-0'>
-                            <div className='flex items-center gap-2'>
-                                <span className='font-medium text-foreground text-sm truncate max-w-50 sm:max-w-65' title={item.name}>
-                                    {item.name}
-                                </span>
-                                <span className='font-mono text-[11px] px-1.5 py-0.5 rounded-sm bg-muted text-muted-foreground border'>
-                                    {item.codigo}
-                                </span>
-                            </div>
-                            {item.description && (
-                                <span className='text-xs text-muted-foreground line-clamp-1 max-w-65 sm:max-w-[320px]' title={item.description}>
-                                    {item.description}
-                                </span>
-                            )}
+                    <div className='flex flex-col min-w-0 py-1'>
+                        <div className='flex items-center gap-2'>
+                            <button
+                                type='button'
+                                onClick={() => setSelectedProduct(item)}
+                                className='font-medium text-foreground text-sm truncate max-w-50 sm:max-w-65 text-left hover:underline cursor-pointer'
+                                title={item.name}
+                            >
+                                {item.name}
+                            </button>
+                            <span className='font-mono text-[11px] px-1.5 py-0.5 rounded-sm bg-muted text-muted-foreground border'>
+                                {item.codigo}
+                            </span>
                         </div>
+                        {item.description && (
+                            <span className='text-xs text-muted-foreground line-clamp-1 max-w-65 sm:max-w-[320px]' title={item.description}>
+                                {item.description}
+                            </span>
+                        )}
                     </div>
                 )
             }
@@ -548,14 +616,12 @@ export default function TablaProductos({
                         <div className='flex flex-col gap-6'>
                             <SheetHeader>
                                 <div className='flex items-center gap-3'>
-                                    <Avatar className='size-14 rounded-lg border bg-muted/30 shrink-0'>
-                                        {selectedProduct.image && (
-                                            <AvatarImage src={selectedProduct.image} alt={selectedProduct.name} className='object-cover' />
-                                        )}
-                                        <AvatarFallback className='rounded-lg text-sm font-semibold text-muted-foreground'>
-                                            {selectedProduct.name.slice(0, 2).toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <ProductImage
+                                        src={selectedProduct.image}
+                                        alt={selectedProduct.name}
+                                        className='size-14'
+                                        iconClassName='size-6'
+                                    />
                                     <div className='flex flex-col min-w-0'>
                                         <SheetTitle className='text-base font-semibold text-foreground truncate'>
                                             {selectedProduct.name}
@@ -566,6 +632,26 @@ export default function TablaProductos({
                                     </div>
                                 </div>
                             </SheetHeader>
+
+                            {/* Imagen en detalle si el producto cuenta con una */}
+                            {selectedProduct.image && (
+                                <div className='relative w-full aspect-video rounded-lg border border-border/70 bg-muted/10 overflow-hidden flex items-center justify-center group'>
+                                    <img
+                                        src={selectedProduct.image}
+                                        alt={selectedProduct.name}
+                                        className='size-full object-contain p-2'
+                                    />
+                                    <a
+                                        href={selectedProduct.image}
+                                        target='_blank'
+                                        rel='noopener noreferrer'
+                                        className='absolute top-2 right-2 p-1.5 rounded-md bg-background/80 backdrop-blur-xs border text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity shadow-xs'
+                                        title='Ver imagen completa'
+                                    >
+                                        <EyeIcon className='size-3.5' />
+                                    </a>
+                                </div>
+                            )}
 
                             {/* Basic Description */}
                             {selectedProduct.description && (

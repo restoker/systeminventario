@@ -36,7 +36,7 @@ export const newSucursalAction = actionClient
                 ...(isActive !== undefined && { activo: isActive }),
             }).returning();
             revalidatePath(`/dashboard/sucursales`);
-            revalidatePath(`/dashboard/productos/new`);
+            revalidatePath(`/dashboard/sucursales/new`);
 
             return { ok: true, msg: "Sucursal creada exitosamente", sucursal: created };
         } catch (e) {

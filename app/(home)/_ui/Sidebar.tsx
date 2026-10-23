@@ -134,8 +134,8 @@ export const adminRoutes: Record<string, NavItem[]> = {
             icon: CornerDownLeftIcon,
         },
         {
-            title: 'Almacenes',
-            url: '/dashboard/inventario/almacenes',
+            title: 'Sucursales',
+            url: '/dashboard/sucursales',
             icon: Building2Icon,
         },
     ],
