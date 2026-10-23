@@ -53,7 +53,7 @@ export default function ModalSucursalForm({
         }
     });
 
-    const checkProduct = async () => {
+    const checkSucursal = async () => {
         if (editMode) {
             setLoadingCategoria(true);
             const { ok, data: sucursal, msg } = await getSucursalAction(editMode);
@@ -81,7 +81,7 @@ export default function ModalSucursalForm({
 
     useEffect(() => {
         if (editMode) {
-            checkProduct();
+            checkSucursal();
         }
     }, [editMode]);
 

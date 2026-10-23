@@ -424,7 +424,7 @@ export default function TableSucursales({ sucursales }: TableSucursalesProps) {
                                 table.setPageIndex(0);
                             }}
                         >
-                            <SelectTrigger className='w-[145px] h-9 text-xs cursor-pointer'>
+                            <SelectTrigger className='w-36.25 h-9 text-xs cursor-pointer'>
                                 <SelectValue placeholder='Estado' />
                             </SelectTrigger>
                             <SelectContent>
@@ -460,7 +460,7 @@ export default function TableSucursales({ sucursales }: TableSucursalesProps) {
                                     table.setPageIndex(0);
                                 }}
                             >
-                                <SelectTrigger className='w-[70px] h-9 text-xs cursor-pointer'>
+                                <SelectTrigger className='w-17.5 h-9 text-xs cursor-pointer'>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>

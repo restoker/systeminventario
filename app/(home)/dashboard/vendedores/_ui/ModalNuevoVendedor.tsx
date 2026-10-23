@@ -1,33 +1,44 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { UserPlusIcon, XIcon, Loader2Icon } from 'lucide-react'
+import { UserPlusIcon, XIcon, CheckIcon, Loader2Icon, UserCheckIcon } from 'lucide-react'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAction } from 'next-safe-action/hooks'
 
+import { Usuario } from '@/interfaces'
 import { registerSchema, RegisterSchema } from '@/types/register-schema'
 import { registerAction } from '@/server/actions/auth/register-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { getUserAction } from '@/server/actions/auth/get-user-action'
 
 interface ModalNuevoVendedorProps {
   isOpen: boolean
   onClose: () => void
+  userToEdit?: Usuario | null
 }
 
-export default function ModalNuevoVendedor({ isOpen, onClose }: ModalNuevoVendedorProps) {
+export default function ModalNuevoVendedor({
+  isOpen,
+  onClose,
+  userToEdit
+}: ModalNuevoVendedorProps) {
+  const [loadingUser, setLoadingUser] = useState<boolean>(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const editMode = searchParams.get('id')
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors }
-  } = useForm({
+  } = useForm<RegisterSchema>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: '',
@@ -40,49 +51,87 @@ export default function ModalNuevoVendedor({ isOpen, onClose }: ModalNuevoVended
     }
   })
 
+  const checkUser = async () => {
+    if (editMode) {
+      setLoadingUser(true)
+      const { ok, data: user, msg } = await getUserAction(editMode)
+      setLoadingUser(false)
+
+      if (!ok) {
+        toast.error(msg)
+        router.push('/dashboard/vendedores')
+        return
+      }
+
+      if (user) {
+        setValue('id', user.id)
+        setValue('name', user.name || '')
+        setValue('username', user.username || '')
+        setValue('phone', user.phone || '')
+        setValue('email', user.email || '')
+        setValue('role', (user.role as 'admin' | 'saler') || 'saler')
+        setValue('password', '')
+        setValue('confirmPassword', '')
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (editMode) {
+      checkUser()
+    }
+  }, [editMode])
+
   const { execute, status } = useAction(registerAction, {
     onSuccess: ({ data }) => {
-      if (data.ok) {
-        toast.success(data.msg || 'Vendedor registrado correctamente')
-        reset();
-        onClose();
-        router.refresh();
+      if (data?.ok) {
+        toast.success(data.msg || (editMode ? 'Vendedor actualizado correctamente' : 'Vendedor registrado correctamente'))
+        reset()
+        if (editMode) {
+          router.push('/dashboard/vendedores')
+        }
+        onClose()
+        router.refresh()
       } else {
-        toast.error(data.msg || 'Error al registrar vendedor')
+        toast.error(data?.msg || 'Error al procesar el vendedor')
       }
     },
     onError: () => {
-      toast.error('Error del servidor al registrar vendedor')
+      toast.error('Ocurrió un error en el servidor al guardar el vendedor')
     }
   })
 
+  const isPending = status === 'executing'
+
+  const handleClose = () => {
+    if (isPending) return
+    reset()
+    if (editMode) {
+      router.push('/dashboard/vendedores')
+    }
+    onClose()
+  }
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
+      if (e.key === 'Escape' && !isPending) {
+        handleClose()
       }
     }
     if (isOpen) {
       window.addEventListener('keydown', handleKeyDown)
       return () => window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isOpen, onClose])
+  }, [isOpen, isPending, editMode])
 
   if (!isOpen) return null
-
-  const isPending = status === 'executing'
 
   const onSubmit = (formData: RegisterSchema) => {
     execute({
       ...formData,
-      role: 'saler'
+      role: 'saler',
+      ...(editMode ? { id: editMode } : userToEdit?.id ? { id: userToEdit.id } : {})
     })
-  }
-
-  const handleClose = () => {
-    if (isPending) return
-    reset()
-    onClose()
   }
 
   return (
@@ -99,14 +148,20 @@ export default function ModalNuevoVendedor({ isOpen, onClose }: ModalNuevoVended
         <div className='flex items-start justify-between gap-4'>
           <div className='space-y-1'>
             <div className='inline-flex items-center gap-1.5 text-xs font-semibold text-primary uppercase tracking-wider'>
-              <UserPlusIcon className='size-3.5' />
-              <span>Gestión de Personal</span>
+              {editMode ? (
+                <UserCheckIcon className='size-3.5' />
+              ) : (
+                <UserPlusIcon className='size-3.5' />
+              )}
+              <span>{editMode ? 'Actualizar Personal' : 'Gestión de Personal'}</span>
             </div>
             <h3 className='text-lg font-bold tracking-tight text-foreground'>
-              Registrar Nuevo Vendedor
+              {editMode ? 'Editar Vendedor' : 'Registrar Nuevo Vendedor'}
             </h3>
             <p className='text-xs text-muted-foreground'>
-              Crea una cuenta para un nuevo colaborador con rol de vendedor en la plataforma.
+              {editMode
+                ? 'Modifica los datos del colaborador vendedor en la plataforma.'
+                : 'Crea una cuenta para un nuevo colaborador con rol de vendedor en la plataforma.'}
             </p>
           </div>
           <Button
@@ -134,7 +189,8 @@ export default function ModalNuevoVendedor({ isOpen, onClose }: ModalNuevoVended
                 id='name'
                 placeholder='Ej. Carlos Mendoza'
                 {...register('name')}
-                disabled={isPending}
+                disabled={isPending || loadingUser}
+                autoFocus
                 className={errors.name ? 'border-destructive focus-visible:ring-destructive/30' : ''}
               />
               {errors.name && (
@@ -151,7 +207,7 @@ export default function ModalNuevoVendedor({ isOpen, onClose }: ModalNuevoVended
                 id='username'
                 placeholder='Ej. cmendoza'
                 {...register('username')}
-                disabled={isPending}
+                disabled={isPending || loadingUser}
                 className={errors.username ? 'border-destructive focus-visible:ring-destructive/30' : ''}
               />
               {errors.username && (
@@ -169,7 +225,7 @@ export default function ModalNuevoVendedor({ isOpen, onClose }: ModalNuevoVended
                 placeholder='987654321'
                 maxLength={9}
                 {...register('phone')}
-                disabled={isPending}
+                disabled={isPending || loadingUser}
                 className={errors.phone ? 'border-destructive focus-visible:ring-destructive/30' : ''}
               />
               {errors.phone && (
@@ -187,7 +243,7 @@ export default function ModalNuevoVendedor({ isOpen, onClose }: ModalNuevoVended
                 type='email'
                 placeholder='carlos@empresa.com'
                 {...register('email')}
-                disabled={isPending}
+                disabled={isPending || loadingUser}
                 className={errors.email ? 'border-destructive focus-visible:ring-destructive/30' : ''}
               />
               {errors.email && (
@@ -198,14 +254,14 @@ export default function ModalNuevoVendedor({ isOpen, onClose }: ModalNuevoVended
             {/* Contraseña */}
             <div className='space-y-1.5'>
               <Label htmlFor='password' className='text-xs font-medium text-foreground'>
-                Contraseña <span className='text-destructive'>*</span>
+                Contraseña {editMode ? <span className='text-[11px] text-muted-foreground font-normal'>(Opcional)</span> : <span className='text-destructive'>*</span>}
               </Label>
               <Input
                 id='password'
                 type='password'
-                placeholder='••••••••'
+                placeholder={editMode ? 'Dejar en blanco para conservar' : '••••••••'}
                 {...register('password')}
-                disabled={isPending}
+                disabled={isPending || loadingUser}
                 className={errors.password ? 'border-destructive focus-visible:ring-destructive/30' : ''}
               />
               {errors.password && (
@@ -216,14 +272,14 @@ export default function ModalNuevoVendedor({ isOpen, onClose }: ModalNuevoVended
             {/* Confirmar Contraseña */}
             <div className='space-y-1.5'>
               <Label htmlFor='confirmPassword' className='text-xs font-medium text-foreground'>
-                Confirmar Contraseña <span className='text-destructive'>*</span>
+                Confirmar Contraseña {editMode ? <span className='text-[11px] text-muted-foreground font-normal'>(Opcional)</span> : <span className='text-destructive'>*</span>}
               </Label>
               <Input
                 id='confirmPassword'
                 type='password'
-                placeholder='••••••••'
+                placeholder={editMode ? 'Dejar en blanco para conservar' : '••••••••'}
                 {...register('confirmPassword')}
-                disabled={isPending}
+                disabled={isPending || loadingUser}
                 className={errors.confirmPassword ? 'border-destructive focus-visible:ring-destructive/30' : ''}
               />
               {errors.confirmPassword && (
@@ -239,20 +295,24 @@ export default function ModalNuevoVendedor({ isOpen, onClose }: ModalNuevoVended
               variant='outline'
               onClick={handleClose}
               disabled={isPending}
-              className='cursor-pointer'
+              className='cursor-pointer text-xs'
             >
               Cancelar
             </Button>
-            <Button type='submit' disabled={isPending} className='cursor-pointer gap-2'>
+            <Button
+              type='submit'
+              disabled={isPending || loadingUser}
+              className='cursor-pointer gap-2 text-xs font-medium'
+            >
               {isPending ? (
                 <>
                   <Loader2Icon className='size-4 animate-spin' />
-                  <span>Registrando...</span>
+                  <span>{editMode ? 'Actualizando...' : 'Registrando...'}</span>
                 </>
               ) : (
                 <>
-                  <UserPlusIcon className='size-4' />
-                  <span>Guardar Vendedor</span>
+                  <CheckIcon className='size-4' />
+                  <span>{editMode ? 'Actualizar Vendedor' : 'Guardar Vendedor'}</span>
                 </>
               )}
             </Button>

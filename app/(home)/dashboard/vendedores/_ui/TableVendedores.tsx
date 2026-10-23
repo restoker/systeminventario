@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useId, useMemo, useState } from 'react'
+import React, { useEffect, useId, useMemo, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { ColumnDef } from '@tanstack/react-table'
 import {
   columnVisibilityFeature,
@@ -27,7 +28,8 @@ import {
   ShieldCheckIcon,
   UserPlusIcon,
   UsersIcon,
-  CheckIcon
+  CheckIcon,
+  EditIcon
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -75,12 +77,22 @@ const features = tableFeatures({
 })
 
 export default function TableVendedores({ vendedores }: TableVendedoresProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const editMode = searchParams.get('id')
+
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'unverified'>('all')
   const [selectedSeller, setSelectedSeller] = useState<Usuario | null>(null)
   const [isNewSellerModalOpen, setIsNewSellerModalOpen] = useState(false)
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const searchInputId = useId()
+
+  useEffect(() => {
+    if (editMode) {
+      setIsNewSellerModalOpen(true)
+    }
+  }, [editMode])
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text)
@@ -128,7 +140,7 @@ export default function TableVendedores({ vendedores }: TableVendedoresProps) {
             <div className='flex items-center gap-3 py-1'>
               <Avatar className='size-10 border bg-muted/40 shrink-0'>
                 {seller.image && <AvatarImage src={seller.image} alt={seller.name} className='object-cover' />}
-                <AvatarFallback className='text-xs font-semibold text-foreground/80 bg-primary/10 text-primary'>
+                <AvatarFallback className='text-xs font-semibold bg-primary/10 text-primary'>
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -218,10 +230,10 @@ export default function TableVendedores({ vendedores }: TableVendedoresProps) {
           const formatted = isNaN(date.getTime())
             ? '—'
             : new Intl.DateTimeFormat('es-PE', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric'
-              }).format(date)
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            }).format(date)
 
           return <span className='text-xs text-muted-foreground whitespace-nowrap'>{formatted}</span>
         }
@@ -257,6 +269,16 @@ export default function TableVendedores({ vendedores }: TableVendedoresProps) {
                     >
                       <EyeIcon className='size-3.5 text-muted-foreground' />
                       <span>Ver detalles</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        router.push(`/dashboard/vendedores?id=${seller.id}`)
+                        setIsNewSellerModalOpen(true)
+                      }}
+                      className='cursor-pointer gap-2 text-xs'
+                    >
+                      <EditIcon className='size-3.5 text-muted-foreground' />
+                      <span>Editar vendedor</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => copyToClipboard(seller.email, 'Correo')}
@@ -322,12 +344,12 @@ export default function TableVendedores({ vendedores }: TableVendedoresProps) {
 
   const selectedInitials = selectedSeller?.name
     ? selectedSeller.name
-        .trim()
-        .split(/\s+/)
-        .map(p => p[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase()
+      .trim()
+      .split(/\s+/)
+      .map(p => p[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase()
     : 'VE'
 
   return (
@@ -370,7 +392,7 @@ export default function TableVendedores({ vendedores }: TableVendedoresProps) {
                 table.setPageIndex(0)
               }}
             >
-              <SelectTrigger className='w-[145px] h-9 text-xs cursor-pointer'>
+              <SelectTrigger className='w-36.25 h-9 text-xs cursor-pointer'>
                 <SelectValue placeholder='Estado' />
               </SelectTrigger>
               <SelectContent>
@@ -406,7 +428,7 @@ export default function TableVendedores({ vendedores }: TableVendedoresProps) {
                   table.setPageIndex(0)
                 }}
               >
-                <SelectTrigger className='w-[70px] h-9 text-xs cursor-pointer'>
+                <SelectTrigger className='w-17.5 h-9 text-xs cursor-pointer'>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -563,10 +585,9 @@ export default function TableVendedores({ vendedores }: TableVendedoresProps) {
                         <Button
                           size='icon-sm'
                           variant={isActive ? 'default' : 'ghost'}
-                          className={`cursor-pointer text-xs ${
-                            !isActive &&
+                          className={`cursor-pointer text-xs ${!isActive &&
                             'bg-primary/5 text-primary hover:bg-primary/15'
-                          }`}
+                            }`}
                           onClick={() => table.setPageIndex(page - 1)}
                           aria-current={isActive ? 'page' : undefined}
                         >
@@ -802,6 +823,19 @@ export default function TableVendedores({ vendedores }: TableVendedoresProps) {
                   onClick={() => setSelectedSeller(null)}
                 >
                   Cerrar
+                </Button>
+                <Button
+                  variant='outline'
+                  className='flex-1 cursor-pointer text-xs gap-1.5'
+                  onClick={() => {
+                    const id = selectedSeller.id
+                    setSelectedSeller(null)
+                    router.push(`/dashboard/vendedores?id=${id}`)
+                    setIsNewSellerModalOpen(true)
+                  }}
+                >
+                  <EditIcon className='size-3.5' />
+                  <span>Editar</span>
                 </Button>
                 {selectedSeller.email && (
                   <Button
