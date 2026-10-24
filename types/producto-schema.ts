@@ -1,5 +1,58 @@
 import z from "zod";
 
+export const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
+
+export const ACCEPTED_IMAGE_TYPES = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "image/avif",
+] as const;
+
+const isFile = (val: unknown): val is File => typeof File !== "undefined" && val instanceof File;
+const isFileList = (val: unknown): val is FileList => typeof FileList !== "undefined" && val instanceof FileList;
+
+const extractFile = (val: unknown): File | null => {
+    if (isFile(val)) return val;
+    if (isFileList(val)) return val.length > 0 ? val[0] : null;
+    return null;
+};
+
+export const imageSchema = z
+    .custom<File | FileList | string | undefined | null>()
+    .refine(
+        (val) => {
+            if (!val || typeof val === "string") return true;
+            if (isFileList(val) && val.length === 0) return true;
+            const file = extractFile(val);
+            if (file) {
+                return file.size <= MAX_IMAGE_SIZE;
+            }
+            return false;
+        },
+        {
+            message: "El tamaño de la imagen no debe superar los 2MB",
+        }
+    )
+    .refine(
+        (val) => {
+            if (!val || typeof val === "string") return true;
+            if (isFileList(val) && val.length === 0) return true;
+            const file = extractFile(val);
+            if (file) {
+                return ACCEPTED_IMAGE_TYPES.includes(file.type as any) || file.type.startsWith("image/");
+            }
+            return false;
+        },
+        {
+            message: "Solo se permiten imágenes (JPEG, PNG, WEBP, GIF, AVIF). No se permiten videos ni otros archivos",
+        }
+    )
+    .optional()
+    .nullable();
+
 export const productoSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(3, "El nombre debe tener al menos 3 caracteres").max(100, "El nombre debe tener menos de 100 caracteres"),
@@ -7,7 +60,7 @@ export const productoSchema = z.object({
     precioCompra: z.number().min(0, "El precio debe ser mayor o igual a 0"),
     precioVenta: z.number().min(1, "El precio debe ser mayor a 0"),
     // stock: z.number().min(0, "El stock debe ser mayor o igual a 0"),
-    image: z.string().optional(),
+    image: imageSchema,
     codigo: z.string().min(3, "El código de barras debe tener al menos 3 caracteres").max(100, "El código de barras debe tener menos de 100 caracteres"),
     enConsignacion: z.boolean(),
     // el stock por sucursal vive en `stock_sucursal`
