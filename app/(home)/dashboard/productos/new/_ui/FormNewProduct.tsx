@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -23,7 +23,10 @@ import {
     Handshake,
     Store,
     Save,
-    RotateCcw
+    RotateCcw,
+    UploadCloud,
+    X,
+    Image as ImageIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Categoria, Igv, Marca, Sucursal, Unidad, Proveedor } from '@/interfaces';
@@ -65,6 +68,20 @@ export default function FormNewProduct({
     const [stockMinimo, setStockMinimo] = useState('');
     const [cantidadInicial, setCantidadInicial] = useState('');
 
+    // Estado para la imagen del producto
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+    // Limpieza de memoria de la URL del objeto creado para la vista previa
+    useEffect(() => {
+        return () => {
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        };
+    }, [previewUrl]);
+
     const form = useForm<ProductSchema>({
         resolver: zodResolver(productoSchema),
         defaultValues: {
@@ -89,10 +106,10 @@ export default function FormNewProduct({
 
     const { execute, status } = useAction(nuevoProductoAction, {
         onSuccess: ({ data }) => {
-            if (data.ok) {
-                form.reset();
+            if (data?.ok) {
+                handleReset();
                 toast.success(data.msg);
-            } else {
+            } else if (data?.msg) {
                 toast.error(data.msg);
             }
         },
@@ -100,13 +117,70 @@ export default function FormNewProduct({
             // console.log(error);
             toast.error('Error al crear el producto');
         }
-    })
+    });
 
 
     const isConsignacion = useWatch({ control: form.control, name: 'enConsignacion' });
 
     // Estado del modal dinámico
     const [activeModal, setActiveModal] = useState<ModalType>(null);
+
+    // Manejo de la imagen: selección, eliminación y drag & drop
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+            const url = URL.createObjectURL(file);
+            setPreviewUrl(url);
+            form.setValue('image', file, { shouldValidate: true });
+        }
+    };
+
+    const handleRemoveImage = (e?: React.MouseEvent) => {
+        if (e) {
+            e.stopPropagation();
+        }
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+        }
+        setPreviewUrl(null);
+        form.setValue('image', '', { shouldValidate: true });
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+            const url = URL.createObjectURL(file);
+            setPreviewUrl(url);
+            form.setValue('image', file, { shouldValidate: true });
+            if (fileInputRef.current) {
+                fileInputRef.current.files = e.dataTransfer.files;
+            }
+        }
+    };
 
     // Generador automático de SKU / Código
     const generarCodigo = () => {
@@ -122,11 +196,7 @@ export default function FormNewProduct({
     };
 
     const onSubmit = (data: ProductSchema) => {
-        toast.success('Formulario listo. Datos preparados correctamente.', {
-            description: `${data.name} (${data.codigo}) - Listo para guardar en la base de datos cuando se active la acción de servidor.`,
-            duration: 4000,
-        });
-        console.log(data);
+        execute(data);
     };
 
     const onError = (formErrors: typeof form.formState.errors) => {
@@ -139,6 +209,13 @@ export default function FormNewProduct({
     };
 
     const handleReset = () => {
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+        }
+        setPreviewUrl(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
         form.reset({
             name: '',
             descripcion: '',
@@ -338,6 +415,115 @@ export default function FormNewProduct({
                                 <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
                                     <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
                                     {form.formState.errors.descripcion.message}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Imagen del Producto */}
+                        <div className="sm:col-span-2 space-y-2">
+                            <label htmlFor="product-image-input" className="block text-xs font-semibold uppercase tracking-wider text-black/70 dark:text-white/70">
+                                Imagen del Producto <span className="font-normal lowercase text-black/40 dark:text-white/40">(Opcional, máx. 2MB)</span>
+                            </label>
+
+                            {previewUrl ? (
+                                <div className="relative flex flex-col sm:flex-row items-center gap-4 rounded-xl border border-black/15 bg-black/[0.02] p-3.5 dark:border-white/15 dark:bg-white/[0.02] transition-all">
+                                    {/* Contenedor de la pre-visualización */}
+                                    <div className="relative size-28 sm:size-32 rounded-lg overflow-hidden border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 shrink-0 shadow-xs">
+                                        <img
+                                            src={previewUrl}
+                                            alt="Previsualización del producto"
+                                            className="size-full object-cover"
+                                        />
+                                    </div>
+
+                                    {/* Información del archivo y acciones */}
+                                    <div className="flex-1 min-w-0 space-y-1.5 text-center sm:text-left">
+                                        <div className="flex items-center justify-center sm:justify-start gap-2">
+                                            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                                                <Sparkles className="size-3" />
+                                                Imagen seleccionada
+                                            </span>
+                                            {form.watch('image') instanceof File && (
+                                                <span className="text-xs text-black/50 dark:text-white/50">
+                                                    {((form.watch('image') as File).size / (1024 * 1024)).toFixed(2)} MB
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-sm font-medium text-black dark:text-white truncate">
+                                            {form.watch('image') instanceof File
+                                                ? (form.watch('image') as File).name
+                                                : 'Imagen lista para subir'}
+                                        </p>
+                                        <p className="text-xs text-black/50 dark:text-white/50">
+                                            Formato verificado. La imagen se optimizará y subirá a Cloudinary al guardar el producto.
+                                        </p>
+
+                                        <div className="pt-1 flex items-center justify-center sm:justify-start gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="inline-flex items-center gap-1.5 text-xs font-medium text-[#FC7819] hover:underline cursor-pointer"
+                                            >
+                                                <RotateCcw className="size-3" />
+                                                <span>Cambiar imagen</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Pequeño botón para quitar la imagen */}
+                                    <button
+                                        type="button"
+                                        onClick={handleRemoveImage}
+                                        title="Quitar imagen"
+                                        aria-label="Quitar imagen"
+                                        className="absolute top-2.5 right-2.5 size-7 inline-flex items-center justify-center rounded-lg bg-black/5 hover:bg-red-500/10 text-black/60 hover:text-red-500 dark:bg-white/5 dark:text-white/60 dark:hover:bg-red-500/20 dark:hover:text-red-400 transition-colors cursor-pointer"
+                                    >
+                                        <X className="size-4" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div
+                                    onDragOver={handleDragOver}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={handleDrop}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className={clsx(
+                                        "group relative flex flex-col items-center justify-center gap-2.5 rounded-xl border-2 border-dashed py-8 px-6 text-center transition-all cursor-pointer",
+                                        isDragging
+                                            ? "border-[#FC7819] bg-[#FC7819]/5 scale-[0.99]"
+                                            : "border-black/20 hover:border-[#FC7819] hover:bg-black/[0.01] dark:border-white/15 dark:hover:border-[#FC7819] dark:hover:bg-white/[0.01]",
+                                        form.formState.errors.image && "border-red-500! bg-red-500/5"
+                                    )}
+                                >
+                                    <div className="flex size-11 items-center justify-center rounded-full bg-amber-500/10 text-[#FC7819] group-hover:scale-110 transition-transform duration-200">
+                                        <UploadCloud className="size-5" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-sm font-medium text-black dark:text-white">
+                                            <span className="text-[#FC7819] hover:underline font-semibold">Haz clic para subir</span> o arrastra y suelta tu imagen
+                                        </p>
+                                        <p className="text-xs text-black/50 dark:text-white/50">
+                                            PNG, JPG, WEBP, GIF o AVIF (Máximo 2MB). No se admiten videos ni otros formatos.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Input de archivo oculto */}
+                            <input
+                                ref={fileInputRef}
+                                id="product-image-input"
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/*"
+                                onChange={handleImageChange}
+                                className="hidden"
+                            />
+
+                            {/* Mensaje de error de validación */}
+                            {form.formState.errors.image && (
+                                <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
+                                    <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+                                    {form.formState.errors.image.message as string}
                                 </p>
                             )}
                         </div>
