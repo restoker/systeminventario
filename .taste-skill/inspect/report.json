@@ -1,6 +1,6 @@
 {
- "url": "http://localhost:3000/some-non-existent-path",
- "at": "2026-10-23T22:56:49.006Z",
+ "url": "http://localhost:3000/ruta-inexistente",
+ "at": "2026-10-25T19:18:40.065Z",
  "allow": [
   "few-pictures",
   "no-footage"
@@ -15,8 +15,8 @@
     1
    ],
    "motion": {
-    "elements": 22,
-    "css": 21,
+    "elements": 23,
+    "css": 22,
     "transitions": 0,
     "scripted": 1,
     "videos": 0,
@@ -31,7 +31,7 @@
      "height": 900,
      "screens": 1,
      "words": 127,
-     "img": 0,
+     "img": 1,
      "video": 0,
      "canvas": 0,
      "svg": 6,
@@ -40,10 +40,12 @@
      "overflowCulprits": [],
      "uiFragments": 1,
      "uiAbuse": false,
-     "realPictures": 0,
+     "realPictures": 1,
      "videoCount": 0,
      "uiPictures": 1,
-     "pictureSamples": [],
+     "pictureSamples": [
+      "image?url=%2Fimages%2Fwarehouse-storage-mask.jpg"
+     ],
      "blendText": 0,
      "sideScrollers": 0,
      "brokenImages": [],
@@ -261,13 +263,18 @@
      "blurred": 0,
      "roundedBoxes": 1,
      "boxRadius": 10,
-     "squareMedia": 0,
+     "squareMedia": 1,
      "roundedMedia": 0,
      "mediaRadius": 0,
      "textShadow": 0,
      "cardRows": []
     },
-    "heroMedia": [],
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 1
+     }
+    ],
     "nav": {
      "links": 2,
      "fixed": false,
@@ -291,8 +298,8 @@
     1
    ],
    "motion": {
-    "elements": 22,
-    "css": 21,
+    "elements": 23,
+    "css": 22,
     "transitions": 0,
     "scripted": 1,
     "videos": 0,
@@ -307,7 +314,7 @@
      "height": 1264,
      "screens": 1.2,
      "words": 127,
-     "img": 0,
+     "img": 1,
      "video": 0,
      "canvas": 0,
      "svg": 6,
@@ -316,10 +323,12 @@
      "overflowCulprits": [],
      "uiFragments": 1,
      "uiAbuse": false,
-     "realPictures": 0,
+     "realPictures": 1,
      "videoCount": 0,
      "uiPictures": 1,
-     "pictureSamples": [],
+     "pictureSamples": [
+      "image?url=%2Fimages%2Fwarehouse-storage-mask.jpg"
+     ],
      "blendText": 0,
      "sideScrollers": 0,
      "brokenImages": [],
@@ -546,13 +555,18 @@
      "blurred": 0,
      "roundedBoxes": 1,
      "boxRadius": 10,
-     "squareMedia": 0,
+     "squareMedia": 1,
      "roundedMedia": 0,
      "mediaRadius": 0,
      "textShadow": 0,
      "cardRows": []
     },
-    "heroMedia": [],
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 1
+     }
+    ],
     "nav": {
      "links": 2,
      "fixed": false,
@@ -576,8 +590,8 @@
     0.99
    ],
    "motion": {
-    "elements": 22,
-    "css": 21,
+    "elements": 23,
+    "css": 22,
     "transitions": 0,
     "scripted": 1,
     "videos": 0,
@@ -592,7 +606,7 @@
      "height": 1360,
      "screens": 1.6,
      "words": 127,
-     "img": 0,
+     "img": 1,
      "video": 0,
      "canvas": 0,
      "svg": 6,
@@ -601,10 +615,12 @@
      "overflowCulprits": [],
      "uiFragments": 1,
      "uiAbuse": false,
-     "realPictures": 0,
+     "realPictures": 1,
      "videoCount": 0,
      "uiPictures": 1,
-     "pictureSamples": [],
+     "pictureSamples": [
+      "image?url=%2Fimages%2Fwarehouse-storage-mask.jpg"
+     ],
      "blendText": 0,
      "sideScrollers": 0,
      "brokenImages": [],
@@ -828,13 +844,18 @@
      "blurred": 0,
      "roundedBoxes": 1,
      "boxRadius": 10,
-     "squareMedia": 0,
+     "squareMedia": 1,
      "roundedMedia": 0,
      "mediaRadius": 0,
      "textShadow": 0,
      "cardRows": []
     },
-    "heroMedia": [],
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 1
+     }
+    ],
     "nav": {
      "links": 2,
      "fixed": false,

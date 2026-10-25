@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -78,7 +79,7 @@ export default function NotFound() {
   };
 
   return (
-    <main className="min-h-[100svh] w-full bg-white text-neutral-900 font-sans dark:bg-neutral-950 dark:text-neutral-100 flex flex-col justify-between selection:bg-neutral-900 selection:text-white dark:selection:bg-neutral-100 dark:selection:text-neutral-900">
+    <main className="relative min-h-[100svh] w-full bg-white text-neutral-900 font-sans dark:bg-neutral-950 dark:text-neutral-100 flex flex-col justify-between selection:bg-neutral-900 selection:text-white dark:selection:bg-neutral-100 dark:selection:text-neutral-900 overflow-hidden">
       <style>{`
         @keyframes notFoundEnter {
           from {
@@ -90,8 +91,19 @@ export default function NotFound() {
             transform: translateY(0);
           }
         }
+        @keyframes maskFadeIn {
+          from {
+            opacity: 0;
+            transform: scale(1.03);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
         @media (prefers-reduced-motion: reduce) {
-          .anim-enter {
+          .anim-enter,
+          .anim-mask {
             animation: none !important;
             opacity: 1 !important;
             transform: none !important;
@@ -100,11 +112,37 @@ export default function NotFound() {
         .anim-enter {
           animation: notFoundEnter 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
+        .anim-mask {
+          animation: maskFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
       `}</style>
+
+      {/* Fondo con imagen de almacén enmascarada (Image Mask) */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-0 overflow-hidden select-none anim-mask"
+      >
+        <div
+          className="absolute inset-0 opacity-[0.14] sm:opacity-[0.22] dark:opacity-[0.18] dark:sm:opacity-[0.24] transition-opacity duration-700"
+          style={{
+            WebkitMaskImage: "radial-gradient(ellipse 85% 65% at 88% 35%, black 10%, rgba(0, 0, 0, 0.35) 52%, transparent 82%)", /* taste-skill-ignore */
+            maskImage: "radial-gradient(ellipse 85% 65% at 88% 35%, black 10%, rgba(0, 0, 0, 0.35) 52%, transparent 82%)", /* taste-skill-ignore */
+          }}
+        >
+          <Image
+            src="https://cdn.cosmos.so/8e9cea80-761b-45a5-9610-4ec2d363154b?format=webp"
+            alt="Estructura de almacenamiento e inventario del almacén central"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-right md:object-[center_right] grayscale contrast-125 dark:contrast-110"
+          />
+        </div>
+      </div>
 
       {/* Barra de cabecera utilitaria */}
       <header
-        className="anim-enter w-full bg-neutral-50 dark:bg-neutral-900/70"
+        className="relative z-10 anim-enter w-full bg-neutral-50/90 dark:bg-neutral-900/80"
         style={{ animationDelay: "40ms" }}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -138,7 +176,7 @@ export default function NotFound() {
       </header>
 
       {/* Contenido principal */}
-      <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-16 items-start">
           {/* Columna izquierda: Declaración y navegación primaria */}
           <div className="lg:col-span-7 flex flex-col justify-center">
@@ -297,7 +335,7 @@ export default function NotFound() {
 
       {/* Pie de página sobrio y diseñado */}
       <footer
-        className="anim-enter w-full bg-neutral-50 dark:bg-neutral-900/60 py-6"
+        className="relative z-10 anim-enter w-full bg-neutral-50/90 dark:bg-neutral-900/60 py-6"
         style={{ animationDelay: "580ms" }}
       >
         <div className="mx-auto flex max-w-7xl flex-col sm:flex-row items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 text-[13px] text-neutral-500 dark:text-neutral-400">

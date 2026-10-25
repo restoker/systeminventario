@@ -15,8 +15,10 @@ import { kardex } from "../schema/kardex";
 import { igv } from "../schema/igv";
 import { imagenProducto } from "../schema/imagen-producto";
 import { tipoDocumento } from "../schema/tipo-documento";
+import { comision } from "../schema/comision";
+import { configuracion } from "../schema/configuracion";
 
-export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta, kardex, igv, imagenProducto, tipoDocumento }, (r) => ({
+export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta, kardex, igv, imagenProducto, tipoDocumento, comision, configuracion }, (r) => ({
     users: {
         sessions: r.many.sessions({
             from: r.users.id,

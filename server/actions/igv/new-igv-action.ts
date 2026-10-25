@@ -30,6 +30,7 @@ export const newIgvAction = actionClient
 
                 revalidatePath(`/dashboard/productos`);
                 revalidatePath(`/dashboard/productos/new`);
+                revalidatePath(`/dashboard/configuracion`);
                 return { ok: true, msg: "IGV actualizado exitosamente", igv: updated };
             }
 
@@ -40,6 +41,7 @@ export const newIgvAction = actionClient
 
             revalidatePath(`/dashboard/productos`);
             revalidatePath(`/dashboard/productos/new`);
+            revalidatePath(`/dashboard/configuracion`);
             return { ok: true, msg: "IGV creado exitosamente", igv: created };
         } catch (e) {
             console.error(e);

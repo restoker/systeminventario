@@ -17,6 +17,8 @@ import { venta } from "./venta";
 import { kardex, motivoKardexEnum, origenKardexEnum, tipoMovimientoKardexEnum } from "./kardex";
 import { igv } from "./igv";
 import { imagenProducto } from "./imagen-producto";
+import { comision } from "./comision";
+import { configuracion } from "./configuracion";
 
 export default {
     users,
@@ -48,4 +50,6 @@ export default {
     origenKardexEnum,
     igv,
     imagenProducto,
+    comision,
+    configuracion,
 }

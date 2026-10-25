@@ -1,6 +1,7 @@
 import { pgEnum, real, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { users } from "./auth-schema";
 import { coreTable } from "./communityShieldColumns";
+import { sucursal } from "./sucursal";
 
 export const estadoCajaEnum = pgEnum("estado_caja", ["abierto", "cerrado"]);
 
@@ -11,5 +12,6 @@ export const caja = coreTable("caja", {
     montoCierre: real('monto_cierre'),
     estado: estadoCajaEnum('estado').default('cerrado'),
     userId: text('userId').notNull().references(() => users.id),
+    sucursalId: text('sucursalId').notNull().references(() => sucursal.id),
     fechaCreada: timestamp('fecha_creada', { mode: 'date', withTimezone: true }),
 });
