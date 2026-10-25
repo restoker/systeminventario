@@ -42,6 +42,7 @@ import ModalUnidad from './ModalUnidad';
 import ModalProveedor from './ModalProveedor';
 import ModalSucursal from './ModalSucursal';
 import ModalIgv from './ModalIgv';
+import ModalLoadingProduct from './ModalLoadingProduct';
 
 interface Props {
     categorias: Categoria[];
@@ -68,19 +69,22 @@ export default function FormNewProduct({
     const [stockMinimo, setStockMinimo] = useState('');
     const [cantidadInicial, setCantidadInicial] = useState('');
 
-    // Estado para la imagen del producto
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    // Estado para las imágenes del producto (máximo 3)
+    interface SelectedImageItem {
+        id: string;
+        file: File;
+        previewUrl: string;
+    }
+    const [selectedImages, setSelectedImages] = useState<SelectedImageItem[]>([]);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-    // Limpieza de memoria de la URL del objeto creado para la vista previa
+    // Limpieza de memoria de URLs de objetos creados para las vistas previas
     useEffect(() => {
         return () => {
-            if (previewUrl) {
-                URL.revokeObjectURL(previewUrl);
-            }
+            selectedImages.forEach((img) => URL.revokeObjectURL(img.previewUrl));
         };
-    }, [previewUrl]);
+    }, [selectedImages]);
 
     const form = useForm<ProductSchema>({
         resolver: zodResolver(productoSchema),
@@ -89,6 +93,7 @@ export default function FormNewProduct({
             descripcion: '',
             precioCompra: 0,
             precioVenta: 0,
+            images: [],
             image: '',
             codigo: '',
             enConsignacion: false,
@@ -102,7 +107,6 @@ export default function FormNewProduct({
         },
         mode: 'onTouched',
     });
-
 
     const { execute, status } = useAction(nuevoProductoAction, {
         onSuccess: ({ data }) => {
@@ -119,34 +123,68 @@ export default function FormNewProduct({
         }
     });
 
-
     const isConsignacion = useWatch({ control: form.control, name: 'enConsignacion' });
 
     // Estado del modal dinámico
     const [activeModal, setActiveModal] = useState<ModalType>(null);
 
-    // Manejo de la imagen: selección, eliminación y drag & drop
+    // Sincronizar imágenes seleccionadas con react-hook-form
+    const syncFormImages = (items: SelectedImageItem[]) => {
+        const files = items.map((it) => it.file);
+        form.setValue('images', files, { shouldValidate: true });
+        form.setValue('image', files[0] ?? '', { shouldValidate: true });
+    };
+
+    // Agregar archivos respetando el límite máximo de 3 imágenes
+    const addFiles = (incomingList: FileList | File[]) => {
+        const imageFiles = Array.from(incomingList).filter((f) => f.type.startsWith('image/'));
+        if (imageFiles.length === 0) {
+            toast.error('Solo se permiten archivos de imagen (JPEG, PNG, WEBP, GIF, AVIF)');
+            return;
+        }
+
+        const availableSlots = 3 - selectedImages.length;
+        if (availableSlots <= 0) {
+            toast.warning('Ya has alcanzado el límite máximo de 3 imágenes');
+            return;
+        }
+
+        const toAdd = imageFiles.slice(0, availableSlots);
+        if (imageFiles.length > availableSlots) {
+            toast.info(`Solo se agregaron ${availableSlots} imagen(es) para no superar el límite de 3`);
+        }
+
+        const newItems: SelectedImageItem[] = toAdd.map((file) => ({
+            id: `${file.name}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
+            file,
+            previewUrl: URL.createObjectURL(file),
+        }));
+
+        const nextItems = [...selectedImages, ...newItems].slice(0, 3);
+        setSelectedImages(nextItems);
+        syncFormImages(nextItems);
+    };
+
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            if (previewUrl) {
-                URL.revokeObjectURL(previewUrl);
-            }
-            const url = URL.createObjectURL(file);
-            setPreviewUrl(url);
-            form.setValue('image', file, { shouldValidate: true });
+        if (e.target.files && e.target.files.length > 0) {
+            addFiles(e.target.files);
+        }
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
         }
     };
 
-    const handleRemoveImage = (e?: React.MouseEvent) => {
+    const handleRemoveImage = (idToRemove: string, e?: React.MouseEvent) => {
         if (e) {
             e.stopPropagation();
         }
-        if (previewUrl) {
-            URL.revokeObjectURL(previewUrl);
+        const item = selectedImages.find((img) => img.id === idToRemove);
+        if (item) {
+            URL.revokeObjectURL(item.previewUrl);
         }
-        setPreviewUrl(null);
-        form.setValue('image', '', { shouldValidate: true });
+        const nextItems = selectedImages.filter((img) => img.id !== idToRemove);
+        setSelectedImages(nextItems);
+        syncFormImages(nextItems);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -168,17 +206,8 @@ export default function FormNewProduct({
         e.preventDefault();
         e.stopPropagation();
         setIsDragging(false);
-        const file = e.dataTransfer.files?.[0];
-        if (file) {
-            if (previewUrl) {
-                URL.revokeObjectURL(previewUrl);
-            }
-            const url = URL.createObjectURL(file);
-            setPreviewUrl(url);
-            form.setValue('image', file, { shouldValidate: true });
-            if (fileInputRef.current) {
-                fileInputRef.current.files = e.dataTransfer.files;
-            }
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            addFiles(e.dataTransfer.files);
         }
     };
 
@@ -209,10 +238,8 @@ export default function FormNewProduct({
     };
 
     const handleReset = () => {
-        if (previewUrl) {
-            URL.revokeObjectURL(previewUrl);
-        }
-        setPreviewUrl(null);
+        selectedImages.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+        setSelectedImages([]);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -221,7 +248,8 @@ export default function FormNewProduct({
             descripcion: '',
             precioCompra: 0,
             precioVenta: 0,
-            image: '',
+            images: [],
+            // image: '',
             codigo: '',
             enConsignacion: false,
             nota: '',
@@ -419,67 +447,96 @@ export default function FormNewProduct({
                             )}
                         </div>
 
-                        {/* Imagen del Producto */}
-                        <div className="sm:col-span-2 space-y-2">
-                            <label htmlFor="product-image-input" className="block text-xs font-semibold uppercase tracking-wider text-black/70 dark:text-white/70">
-                                Imagen del Producto <span className="font-normal lowercase text-black/40 dark:text-white/40">(Opcional, máx. 2MB)</span>
-                            </label>
+                        {/* Imágenes del Producto */}
+                        <div className="sm:col-span-2 space-y-2.5">
+                            <div className="flex items-center justify-between">
+                                <label htmlFor="product-image-input" className="block text-xs font-semibold uppercase tracking-wider text-black/70 dark:text-white/70">
+                                    Imágenes del Producto <span className="font-normal lowercase text-black/40 dark:text-white/40">({selectedImages.length}/3 máx. 2MB c/u)</span>
+                                </label>
+                                {selectedImages.length > 0 && (
+                                    <span className="text-xs text-black/50 dark:text-white/50">
+                                        {selectedImages.length === 3 ? 'Límite alcanzado (3/3)' : `${3 - selectedImages.length} espacio(s) restante(s)`}
+                                    </span>
+                                )}
+                            </div>
 
-                            {previewUrl ? (
-                                <div className="relative flex flex-col sm:flex-row items-center gap-4 rounded-xl border border-black/15 bg-black/[0.02] p-3.5 dark:border-white/15 dark:bg-white/[0.02] transition-all">
-                                    {/* Contenedor de la pre-visualización */}
-                                    <div className="relative size-28 sm:size-32 rounded-lg overflow-hidden border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 shrink-0 shadow-xs">
-                                        <img
-                                            src={previewUrl}
-                                            alt="Previsualización del producto"
-                                            className="size-full object-cover"
-                                        />
-                                    </div>
-
-                                    {/* Información del archivo y acciones */}
-                                    <div className="flex-1 min-w-0 space-y-1.5 text-center sm:text-left">
-                                        <div className="flex items-center justify-center sm:justify-start gap-2">
-                                            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
-                                                <Sparkles className="size-3" />
-                                                Imagen seleccionada
-                                            </span>
-                                            {form.watch('image') instanceof File && (
-                                                <span className="text-xs text-black/50 dark:text-white/50">
-                                                    {((form.watch('image') as File).size / (1024 * 1024)).toFixed(2)} MB
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-sm font-medium text-black dark:text-white truncate">
-                                            {form.watch('image') instanceof File
-                                                ? (form.watch('image') as File).name
-                                                : 'Imagen lista para subir'}
-                                        </p>
-                                        <p className="text-xs text-black/50 dark:text-white/50">
-                                            Formato verificado. La imagen se optimizará y subirá a Cloudinary al guardar el producto.
-                                        </p>
-
-                                        <div className="pt-1 flex items-center justify-center sm:justify-start gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => fileInputRef.current?.click()}
-                                                className="inline-flex items-center gap-1.5 text-xs font-medium text-[#FC7819] hover:underline cursor-pointer"
+                            {selectedImages.length > 0 ? (
+                                <div className="space-y-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        {selectedImages.map((imgItem, idx) => (
+                                            <div
+                                                key={imgItem.id}
+                                                className="group relative rounded-xl border border-black/15 bg-black/2 p-2.5 dark:border-white/15 dark:bg-white/2 flex flex-col justify-between overflow-hidden shadow-xs hover:border-[#FC7819]/50 transition-colors"
                                             >
-                                                <RotateCcw className="size-3" />
-                                                <span>Cambiar imagen</span>
-                                            </button>
-                                        </div>
-                                    </div>
+                                                {/* Contenedor de la pre-visualización */}
+                                                <div className="relative aspect-4/3 w-full rounded-lg overflow-hidden border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
+                                                    <img
+                                                        src={imgItem.previewUrl}
+                                                        alt={`Imagen ${idx + 1} del producto`}
+                                                        className="size-full object-cover"
+                                                    />
+                                                    <div className="absolute top-2 left-2 flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md backdrop-blur-md bg-black/70 text-white shadow-xs">
+                                                        {idx === 0 ? (
+                                                            <>
+                                                                <Sparkles className="size-2.5 text-amber-400" />
+                                                                <span>Principal</span>
+                                                            </>
+                                                        ) : (
+                                                            <span>Foto {idx + 1}</span>
+                                                        )}
+                                                    </div>
+                                                    {/* Botón para quitar la imagen */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => handleRemoveImage(imgItem.id, e)}
+                                                        title="Quitar esta imagen"
+                                                        aria-label="Quitar esta imagen"
+                                                        className="absolute top-2 right-2 size-7 inline-flex items-center justify-center rounded-lg bg-black/70 hover:bg-red-500 text-white transition-colors cursor-pointer shadow-xs"
+                                                    >
+                                                        <X className="size-3.5" />
+                                                    </button>
+                                                </div>
 
-                                    {/* Pequeño botón para quitar la imagen */}
-                                    <button
-                                        type="button"
-                                        onClick={handleRemoveImage}
-                                        title="Quitar imagen"
-                                        aria-label="Quitar imagen"
-                                        className="absolute top-2.5 right-2.5 size-7 inline-flex items-center justify-center rounded-lg bg-black/5 hover:bg-red-500/10 text-black/60 hover:text-red-500 dark:bg-white/5 dark:text-white/60 dark:hover:bg-red-500/20 dark:hover:text-red-400 transition-colors cursor-pointer"
-                                    >
-                                        <X className="size-4" />
-                                    </button>
+                                                {/* Detalles del archivo */}
+                                                <div className="mt-2 flex items-center justify-between text-xs text-black/60 dark:text-white/60 px-1">
+                                                    <span className="truncate max-w-32.5 font-medium text-black dark:text-white" title={imgItem.file.name}>
+                                                        {imgItem.file.name}
+                                                    </span>
+                                                    <span className="shrink-0 font-mono text-[11px]">
+                                                        {(imgItem.file.size / (1024 * 1024)).toFixed(2)} MB
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {/* Slot para agregar más imágenes si aún no llega al máximo de 3 */}
+                                        {selectedImages.length < 3 && (
+                                            <div
+                                                onDragOver={handleDragOver}
+                                                onDragLeave={handleDragLeave}
+                                                onDrop={handleDrop}
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className={clsx(
+                                                    "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-4 text-center transition-all cursor-pointer min-h-35",
+                                                    isDragging
+                                                        ? "border-[#FC7819] bg-[#FC7819]/5 scale-[0.99]"
+                                                        : "border-black/20 hover:border-[#FC7819] hover:bg-black/1 dark:border-white/15 dark:hover:border-[#FC7819] dark:hover:bg-white/1"
+                                                )}
+                                            >
+                                                <div className="flex size-9 items-center justify-center rounded-full bg-amber-500/10 text-[#FC7819]">
+                                                    <Plus className="size-4" />
+                                                </div>
+                                                <div className="space-y-0.5">
+                                                    <p className="text-xs font-semibold text-black dark:text-white">
+                                                        Añadir otra imagen
+                                                    </p>
+                                                    <p className="text-[11px] text-black/50 dark:text-white/50">
+                                                        {3 - selectedImages.length} espacio(s) disponible(s)
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             ) : (
                                 <div
@@ -491,8 +548,8 @@ export default function FormNewProduct({
                                         "group relative flex flex-col items-center justify-center gap-2.5 rounded-xl border-2 border-dashed py-8 px-6 text-center transition-all cursor-pointer",
                                         isDragging
                                             ? "border-[#FC7819] bg-[#FC7819]/5 scale-[0.99]"
-                                            : "border-black/20 hover:border-[#FC7819] hover:bg-black/[0.01] dark:border-white/15 dark:hover:border-[#FC7819] dark:hover:bg-white/[0.01]",
-                                        form.formState.errors.image && "border-red-500! bg-red-500/5"
+                                            : "border-black/20 hover:border-[#FC7819] hover:bg-black/1 dark:border-white/15 dark:hover:border-[#FC7819] dark:hover:bg-white/1",
+                                        (form.formState.errors.images || form.formState.errors.image) && "border-red-500! bg-red-500/5"
                                     )}
                                 >
                                     <div className="flex size-11 items-center justify-center rounded-full bg-amber-500/10 text-[#FC7819] group-hover:scale-110 transition-transform duration-200">
@@ -500,30 +557,31 @@ export default function FormNewProduct({
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-sm font-medium text-black dark:text-white">
-                                            <span className="text-[#FC7819] hover:underline font-semibold">Haz clic para subir</span> o arrastra y suelta tu imagen
+                                            <span className="text-[#FC7819] hover:underline font-semibold">Haz clic para subir</span> o arrastra tus imágenes
                                         </p>
                                         <p className="text-xs text-black/50 dark:text-white/50">
-                                            PNG, JPG, WEBP, GIF o AVIF (Máximo 2MB). No se admiten videos ni otros formatos.
+                                            Puedes subir hasta 3 imágenes (PNG, JPG, WEBP, GIF o AVIF de máx. 2MB c/u). No se admiten videos.
                                         </p>
                                     </div>
                                 </div>
                             )}
 
-                            {/* Input de archivo oculto */}
+                            {/* Input de archivo oculto con soporte multiple */}
                             <input
                                 ref={fileInputRef}
                                 id="product-image-input"
                                 type="file"
+                                multiple
                                 accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/*"
                                 onChange={handleImageChange}
                                 className="hidden"
                             />
 
                             {/* Mensaje de error de validación */}
-                            {form.formState.errors.image && (
+                            {(form.formState.errors.images || form.formState.errors.image) && (
                                 <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
                                     <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
-                                    {form.formState.errors.image.message as string}
+                                    {(form.formState.errors.images?.message as string) || (form.formState.errors.image?.message as string)}
                                 </p>
                             )}
                         </div>
@@ -1195,6 +1253,9 @@ export default function FormNewProduct({
                     setActiveModal(null);
                 }}
             />
+
+            {/* MODAL DE CARGA A PANTALLA COMPLETA AL ENVIAR FORMULARIO */}
+            <ModalLoadingProduct isOpen={status === 'executing'} />
         </div>
     );
 }

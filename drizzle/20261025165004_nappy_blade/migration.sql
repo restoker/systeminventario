@@ -1,0 +1,2 @@
+ALTER TABLE "imagen_producto" ADD COLUMN "producto_id" text NOT NULL;--> statement-breakpoint
+ALTER TABLE "imagen_producto" ADD CONSTRAINT "imagen_producto_producto_id_products_id_fkey" FOREIGN KEY ("producto_id") REFERENCES "products"("id") ON DELETE CASCADE;

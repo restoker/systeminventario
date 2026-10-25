@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, LoaderCircle, CircleAlert, UserRound, LockKeyhole, ArrowRight, Check } from 'lucide-react'
 import { loginSchema, type LoginSchema } from '@/types/login-schema'
-import { authClient } from '@/lib/auth-client'
+// import { authClient } from '@/lib/auth-client'
 import { useAction } from 'next-safe-action/hooks'
 import { loginAction } from '@/server/actions/auth/login-action'
 import { toast } from 'sonner'
@@ -130,7 +130,7 @@ const LoginForm = () => {
                     />
                 </div>
                 {errors.username && (
-                    <p id="username-error" className="mt-1.5 flex animate-rise items-center gap-1.5 text-xs text-red-600 [animation-duration:250ms] motion-reduce:animate-none dark:text-red-400">
+                    <p id="username-error" className="mt-1.5 flex animate-rise items-center gap-1.5 text-xs text-red-600 animation-duration-[250ms] motion-reduce:animate-none dark:text-red-400">
                         <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
                         {errors.username.message}
                     </p>
@@ -167,12 +167,12 @@ const LoginForm = () => {
                     </button>
                 </div>
                 {errors.password ? (
-                    <p id="password-error" className="mt-1.5 flex animate-rise items-center gap-1.5 text-xs text-red-600 [animation-duration:250ms] motion-reduce:animate-none dark:text-red-400">
+                    <p id="password-error" className="mt-1.5 flex animate-rise items-center gap-1.5 text-xs text-red-600 animation-duration-[250ms] motion-reduce:animate-none dark:text-red-400">
                         <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
                         {errors.password.message}
                     </p>
                 ) : capsLock && (
-                    <p id="caps-warning" role="status" className="mt-1.5 flex animate-rise items-center gap-1.5 text-xs font-medium text-amber-700 [animation-duration:250ms] motion-reduce:animate-none dark:text-amber-400">
+                    <p id="caps-warning" role="status" className="mt-1.5 flex animate-rise items-center gap-1.5 text-xs font-medium text-amber-700 animation-duration-[250ms] motion-reduce:animate-none dark:text-amber-400">
                         <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
                         Bloq Mayús está activado
                     </p>

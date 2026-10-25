@@ -13,8 +13,10 @@ import { stockSucursal } from "../schema/stock-sucursal";
 import { venta } from "../schema/venta";
 import { kardex } from "../schema/kardex";
 import { igv } from "../schema/igv";
+import { imagenProducto } from "../schema/imagen-producto";
+import { tipoDocumento } from "../schema/tipo-documento";
 
-export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta, kardex, igv }, (r) => ({
+export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta, kardex, igv, imagenProducto, tipoDocumento }, (r) => ({
     users: {
         sessions: r.many.sessions({
             from: r.users.id,
@@ -67,6 +69,16 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
         kardexs: r.many.kardex({
             from: r.products.id,
             to: r.kardex.productoId,
+        }),
+        imagenes: r.many.imagenProducto({
+            from: r.products.id,
+            to: r.imagenProducto.productoId,
+        }),
+    },
+    imagenProducto: {
+        product: r.one.products({
+            from: r.imagenProducto.productoId,
+            to: r.products.id,
         }),
     },
     marcas: {

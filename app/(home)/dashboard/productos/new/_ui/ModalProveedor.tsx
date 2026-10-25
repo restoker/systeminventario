@@ -113,7 +113,7 @@ export default function ModalProveedor({ isOpen, onClose, onSuccess }: ModalProv
                     <div className="space-y-3">
                         <div>
                             <label htmlFor="provNombre" className="block text-xs font-medium text-black dark:text-white mb-1">
-                                Nombre / Razón Comercial <span className="text-red-500">*</span>
+                                Nombre <span className="text-red-500">*</span>
                             </label>
                             <Controller
                                 control={control}

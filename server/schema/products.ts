@@ -14,7 +14,7 @@ export const products = coreTable("products", {
     precioCompra: real("precio_compra").default(0),
     precioVenta: real("precio_venta").notNull(),
     igv: real("igv").default(0.18),
-    image: text("image"),
+    // image: text("image"),
     enConsignacion: boolean("en_consignacion").default(false),//si esta en consignación se no se establece el precio de compra
     // el stock por sucursal vive en `stock_sucursal`
     nota: text("nota"),

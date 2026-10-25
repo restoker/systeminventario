@@ -45,7 +45,7 @@ export default async function ProductosPage({ searchParams }: PageProps) {
         .from(products)
 
     // Fetch paginated products with relationships using Drizzle relational query builder
-    const productosData = await db.query.products.findMany({
+    const rawProductosData = await db.query.products.findMany({
         where: search
             ? {
                 OR: [
@@ -60,12 +60,18 @@ export default async function ProductosPage({ searchParams }: PageProps) {
             marca: true,
             unidad: true,
             proveedor: true,
-            stocks: true
+            stocks: true,
+            imagenes: true,
         },
         orderBy: { createdAt: 'desc' },
         limit: pageSize,
         offset
     })
+
+    const productosData = rawProductosData.map((p) => ({
+        ...p,
+        image: p.imagenes?.[0]?.url ?? null,
+    }))
 
     return (
         <SidebarAux>

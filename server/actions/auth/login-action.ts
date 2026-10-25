@@ -38,10 +38,10 @@ export const loginAction = actionClient
 
             return { ok: true, msg: "Inicio de sesión exitoso" };
         } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : "Error al iniciar sesión";
+            // const message = error instanceof Error ? error.message : "Error al iniciar sesión";
             return {
                 ok: false,
-                msg: message,
+                msg: "Error en el servidor",
             };
         }
     });

@@ -16,6 +16,7 @@ import { stockSucursal } from "./stock-sucursal";
 import { venta } from "./venta";
 import { kardex, motivoKardexEnum, origenKardexEnum, tipoMovimientoKardexEnum } from "./kardex";
 import { igv } from "./igv";
+import { imagenProducto } from "./imagen-producto";
 
 export default {
     users,
@@ -46,4 +47,5 @@ export default {
     motivoKardexEnum,
     origenKardexEnum,
     igv,
+    imagenProducto,
 }
