@@ -10,3 +10,7 @@ export interface Proveedor {
     activo: boolean | null;
     razonSocial: string | null;
 }
+
+export interface ProveedorWithProductCount extends Proveedor {
+    totalProductos: number;
+}

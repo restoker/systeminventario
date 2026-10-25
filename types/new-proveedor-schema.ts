@@ -14,3 +14,16 @@ export const newProveedorSchema = z.object({
 });
 
 export type NewProveedorType = z.infer<typeof newProveedorSchema>;
+
+export const toggleProveedorSchema = z.object({
+    id: z.string().min(1, 'ID de proveedor requerido'),
+    activo: z.boolean(),
+});
+
+export type ToggleProveedorType = z.infer<typeof toggleProveedorSchema>;
+
+export const deleteProveedorSchema = z.object({
+    id: z.string().min(1, 'ID de proveedor requerido'),
+});
+
+export type DeleteProveedorType = z.infer<typeof deleteProveedorSchema>;

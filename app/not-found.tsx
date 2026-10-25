@@ -79,7 +79,7 @@ export default function NotFound() {
   };
 
   return (
-    <main className="relative min-h-[100svh] w-full bg-white text-neutral-900 font-sans dark:bg-neutral-950 dark:text-neutral-100 flex flex-col justify-between selection:bg-neutral-900 selection:text-white dark:selection:bg-neutral-100 dark:selection:text-neutral-900 overflow-hidden">
+    <main className="relative min-h-svh w-full bg-white text-neutral-900 font-sans dark:bg-neutral-950 dark:text-neutral-100 flex flex-col justify-between selection:bg-neutral-900 selection:text-white dark:selection:bg-neutral-100 dark:selection:text-neutral-900 overflow-hidden">
       <style>{`
         @keyframes notFoundEnter {
           from {
