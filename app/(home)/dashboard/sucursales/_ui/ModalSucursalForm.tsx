@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getSucursalAction } from '@/server/actions/sucursal/get-sucursal-action';
+import { cn } from 'cn';
 
 interface ModalSucursalFormProps {
     isOpen: boolean;
@@ -69,7 +70,8 @@ export default function ModalSucursalForm({
             if (sucursal) {
                 setValue('id', sucursal.id);
                 setValue('nombre', sucursal.nombre || '');
-                setValue('codigo', sucursal.codigo || '');
+                const cleanCodigo = (sucursal.codigo || '').replace(/^suc-?/i, '');
+                setValue('codigo', cleanCodigo);
                 setValue('direccion', sucursal.direccion || '');
                 setValue('telefono', sucursal.telefono || '');
                 setValue('email', sucursal.email || '');
@@ -196,13 +198,45 @@ export default function ModalSucursalForm({
                             <Label htmlFor='codigo' className='text-xs font-medium text-foreground'>
                                 Código <span className='text-destructive'>*</span>
                             </Label>
-                            <Input
-                                id='codigo'
-                                placeholder='SUC-01'
-                                {...register('codigo')}
-                                disabled={isPending}
-                                className={errors.codigo ? 'border-destructive focus-visible:ring-destructive/30' : ''}
-                            />
+                            <div className='flex rounded-md shadow-xs'>
+                                <span
+                                    className={cn(
+                                        'inline-flex h-9 items-center px-3 rounded-l-md border border-r-0 bg-muted text-xs sm:text-sm font-mono font-medium text-muted-foreground select-none',
+                                        errors.codigo ? 'border-destructive text-destructive' : 'border-input',
+                                        isPending && 'opacity-50 cursor-not-allowed'
+                                    )}
+                                >
+                                    SUC-
+                                </span>
+                                <Input
+                                    id='codigo'
+                                    type='text'
+                                    inputMode='numeric'
+                                    pattern='[0-9]*'
+                                    placeholder='01'
+                                    {...register('codigo', {
+                                        onChange: (e) => {
+                                            e.target.value = e.target.value.replace(/\D/g, '');
+                                        }
+                                    })}
+                                    onKeyDown={(e) => {
+                                        if (
+                                            ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key) ||
+                                            (e.ctrlKey || e.metaKey)
+                                        ) {
+                                            return;
+                                        }
+                                        if (!/^\d$/.test(e.key)) {
+                                            e.preventDefault();
+                                        }
+                                    }}
+                                    disabled={isPending}
+                                    className={cn(
+                                        'rounded-l-none focus-visible:z-10 shadow-none',
+                                        errors.codigo ? 'border-destructive focus-visible:ring-destructive/30' : ''
+                                    )}
+                                />
+                            </div>
                             {errors.codigo && (
                                 <p className='text-[11px] text-destructive'>{errors.codigo.message}</p>
                             )}

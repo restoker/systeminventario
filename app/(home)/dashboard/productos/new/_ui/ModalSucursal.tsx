@@ -152,13 +152,39 @@ export default function ModalSucursal({ isOpen, onClose, onSuccess }: ModalSucur
                                     control={control}
                                     name="codigo"
                                     render={({ field }) => (
-                                        <input
-                                            {...field}
-                                            id="sucCodigo"
-                                            type="text"
-                                            placeholder="SUC-01"
-                                            className={`${inputBaseClass} ${errors.codigo ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
-                                        />
+                                        <div className="flex rounded-lg">
+                                            <span
+                                                className={`inline-flex items-center px-3 rounded-l-lg border border-r-0 bg-black/5 text-xs sm:text-sm font-mono font-medium text-black/60 dark:bg-white/10 dark:text-white/60 select-none transition-colors duration-200 ${errors.codigo
+                                                    ? 'border-red-500! text-red-600! dark:text-red-400!'
+                                                    : 'border-black/20 dark:border-white/15'
+                                                    }`}
+                                            >
+                                                SUC-
+                                            </span>
+                                            <input
+                                                {...field}
+                                                id="sucCodigo"
+                                                type="text"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
+                                                placeholder="01"
+                                                onChange={(e) => {
+                                                    field.onChange(e.target.value.replace(/\D/g, ''));
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (
+                                                        ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key) ||
+                                                        (e.ctrlKey || e.metaKey)
+                                                    ) {
+                                                        return;
+                                                    }
+                                                    if (!/^\d$/.test(e.key)) {
+                                                        e.preventDefault();
+                                                    }
+                                                }}
+                                                className={`${inputBaseClass} rounded-l-none! focus:z-10 ${errors.codigo ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
+                                            />
+                                        </div>
                                     )}
                                 />
                                 {errors.codigo && (

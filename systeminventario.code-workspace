@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../../../templates react/tailwind ui feb-2026/adamwathanss-tuibeta/react/ui-blocks"
 		}
 	],
 	"settings": {}
