@@ -84,7 +84,7 @@ export default function TableSucursales({ sucursales }: TableSucursalesProps) {
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
     const [selectedSucursal, setSelectedSucursal] = useState<Sucursal | null>(null);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-    // const [editingSucursal, setEditingSucursal] = useState<Sucursal | null>(null);
+    const [editingSucursal, setEditingSucursal] = useState<Sucursal | null>(null);
     const [copiedField, setCopiedField] = useState<string | null>(null);
     const searchInputId = useId();
 
@@ -114,12 +114,12 @@ export default function TableSucursales({ sucursales }: TableSucursalesProps) {
     };
 
     const handleOpenCreateModal = () => {
-        // setEditingSucursal(null);
+        setEditingSucursal(null);
         setIsFormModalOpen(true);
     };
 
     const handleOpenEditModal = (sucursal: Sucursal) => {
-        // setEditingSucursal(sucursal);
+        setEditingSucursal(sucursal);
         setIsFormModalOpen(true);
     };
 
@@ -183,14 +183,17 @@ export default function TableSucursales({ sucursales }: TableSucursalesProps) {
                 header: 'Código',
                 cell: ({ row }) => {
                     const code = row.original.codigo;
+                    const displayCode = code?.toUpperCase().startsWith('SUC-')
+                        ? code.toUpperCase()
+                        : `SUC-${code?.toUpperCase()}`;
                     return (
                         <div className='flex items-center gap-1.5'>
                             <span className='text-xs font-semibold px-2 py-0.5 rounded bg-muted text-foreground border uppercase'>
-                                {code}
+                                {displayCode}
                             </span>
                             <button
                                 type='button'
-                                onClick={() => copyToClipboard(code, 'Código')}
+                                onClick={() => copyToClipboard(displayCode, 'Código')}
                                 className='p-1 rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer'
                                 title='Copiar código'
                             >
@@ -301,10 +304,10 @@ export default function TableSucursales({ sucursales }: TableSucursalesProps) {
                                     <EllipsisVerticalIcon className='size-4' aria-hidden='true' />
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align='end' className='w-48'>
-                                    <DropdownMenuLabel className='text-xs text-muted-foreground font-normal'>
-                                        Opciones
-                                    </DropdownMenuLabel>
                                     <DropdownMenuGroup>
+                                        <DropdownMenuLabel className='text-xs text-muted-foreground font-normal'>
+                                            Opciones
+                                        </DropdownMenuLabel>
                                         <DropdownMenuItem
                                             onClick={() => setSelectedSucursal(sucursal)}
                                             className='cursor-pointer gap-2 text-xs'
@@ -683,7 +686,9 @@ export default function TableSucursales({ sucursales }: TableSucursalesProps) {
                                         </span>
                                     </div>
                                     <span className='text-xs text-muted-foreground'>
-                                        Código: {selectedSucursal.codigo.toUpperCase()}
+                                        Código: {selectedSucursal.codigo.toUpperCase().startsWith('SUC-')
+                                            ? selectedSucursal.codigo.toUpperCase()
+                                            : `SUC-${selectedSucursal.codigo.toUpperCase()}`}
                                     </span>
                                     <div className='mt-1.5'>
                                         {selectedSucursal.activo ?? true ? (
@@ -929,9 +934,9 @@ export default function TableSucursales({ sucursales }: TableSucursalesProps) {
                 isOpen={isFormModalOpen}
                 onClose={() => {
                     setIsFormModalOpen(false);
-                    // setEditingSucursal(null);
+                    setEditingSucursal(null);
                 }}
-            // sucursalToEdit={editingSucursal}
+                sucursalToEdit={editingSucursal}
             />
         </>
     );

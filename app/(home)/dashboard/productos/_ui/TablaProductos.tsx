@@ -350,17 +350,19 @@ export default function TablaProductos({
                                 <EllipsisVerticalIcon className='size-4 text-muted-foreground' aria-hidden='true' />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align='end' className='w-48'>
-                                <DropdownMenuLabel className='text-xs font-normal text-muted-foreground'>
-                                    Opciones
-                                </DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => setSelectedProduct(item)} className='cursor-pointer'>
-                                    <EyeIcon className='mr-2 size-4 text-muted-foreground' />
-                                    <span>Ver detalles</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleCopyCode(item.codigo)} className='cursor-pointer'>
-                                    <CopyIcon className='mr-2 size-4 text-muted-foreground' />
-                                    <span>Copiar código</span>
-                                </DropdownMenuItem>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuLabel className='text-xs font-normal text-muted-foreground'>
+                                        Opciones
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => setSelectedProduct(item)} className='cursor-pointer'>
+                                        <EyeIcon className='mr-2 size-4 text-muted-foreground' />
+                                        <span>Ver detalles</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleCopyCode(item.codigo)} className='cursor-pointer'>
+                                        <CopyIcon className='mr-2 size-4 text-muted-foreground' />
+                                        <span>Copiar código</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem

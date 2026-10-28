@@ -33,6 +33,7 @@ export default function ModalSucursalForm({
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const editMode = pathname?.includes('/dashboard/sucursales') ? searchParams.get('id') : null;
+    const isEditing = Boolean(sucursalToEdit || editMode);
 
     const {
         control,
@@ -55,6 +56,19 @@ export default function ModalSucursalForm({
         }
     });
 
+    const populateForm = (sucursal: Sucursal) => {
+        setValue('id', sucursal.id);
+        setValue('nombre', sucursal.nombre || '');
+        const cleanCodigo = (sucursal.codigo || '').replace(/^suc-?/i, '');
+        setValue('codigo', cleanCodigo);
+        setValue('direccion', sucursal.direccion || '');
+        setValue('telefono', sucursal.telefono || '');
+        setValue('email', sucursal.email || '');
+        setValue('ruc', sucursal.ruc || '');
+        setValue('razonSocial', sucursal.razonSocial || '');
+        setValue('isActive', sucursal.activo ?? true);
+    };
+
     const checkSucursal = async () => {
         if (editMode) {
             setLoadingCategoria(true);
@@ -68,30 +82,36 @@ export default function ModalSucursalForm({
             }
 
             if (sucursal) {
-                setValue('id', sucursal.id);
-                setValue('nombre', sucursal.nombre || '');
-                const cleanCodigo = (sucursal.codigo || '').replace(/^suc-?/i, '');
-                setValue('codigo', cleanCodigo);
-                setValue('direccion', sucursal.direccion || '');
-                setValue('telefono', sucursal.telefono || '');
-                setValue('email', sucursal.email || '');
-                setValue('ruc', sucursal.ruc || '');
-                setValue('razonSocial', sucursal.razonSocial || '');
-                setValue('isActive', sucursal.activo ?? true);
+                populateForm(sucursal);
             }
         }
     };
 
     useEffect(() => {
-        if (editMode) {
+        if (!isOpen) return;
+
+        if (sucursalToEdit) {
+            populateForm(sucursalToEdit);
+        } else if (editMode) {
             checkSucursal();
+        } else {
+            reset({
+                nombre: '',
+                codigo: '',
+                direccion: '',
+                telefono: '',
+                email: '',
+                ruc: '',
+                razonSocial: '',
+                isActive: true,
+            });
         }
-    }, [editMode]);
+    }, [isOpen, sucursalToEdit, editMode]);
 
     const { execute, status } = useAction(newSucursalAction, {
         onSuccess: ({ data }) => {
             if (data?.ok) {
-                toast.success(data.msg || (editMode ? 'Sucursal actualizada' : 'Sucursal creada'));
+                toast.success(data.msg || (isEditing ? 'Sucursal actualizada' : 'Sucursal creada'));
                 reset();
                 onClose();
                 router.refresh();
@@ -121,9 +141,10 @@ export default function ModalSucursalForm({
     if (!isOpen) return null;
 
     const onSubmit = (formData: NewSurcursalSchema) => {
+        const id = sucursalToEdit?.id || formData.id || (editMode ?? undefined);
         execute({
             ...formData,
-            ...(sucursalToEdit?.id ? { id: sucursalToEdit.id } : {})
+            ...(id ? { id } : {})
         });
     };
 
@@ -148,13 +169,13 @@ export default function ModalSucursalForm({
                     <div className='space-y-1'>
                         <div className='flex items-center gap-2 text-xs font-semibold text-primary'>
                             <Building2Icon className='size-3.5' />
-                            <span>{editMode ? 'Actualizar Sede' : 'Nueva Sede'}</span>
+                            <span>{isEditing ? 'Actualizar Sede' : 'Nueva Sede'}</span>
                         </div>
                         <h3 className='text-lg font-bold tracking-tight text-foreground'>
-                            {editMode ? 'Editar Sucursal o Almacén' : 'Registrar Nueva Sucursal'}
+                            {isEditing ? 'Editar Sucursal o Almacén' : 'Registrar Nueva Sucursal'}
                         </h3>
                         <p className='text-xs text-muted-foreground'>
-                            {editMode
+                            {isEditing
                                 ? 'Modifica los datos operativos, de contacto o fiscales de esta sucursal.'
                                 : 'Registra un nuevo punto físico o centro de distribución para inventario.'}
                         </p>
@@ -367,7 +388,7 @@ export default function ModalSucursalForm({
                             ) : (
                                 <>
                                     <CheckIcon className='size-4' />
-                                    <span>{editMode ? 'Actualizar Sucursal' : 'Crear Sucursal'}</span>
+                                    <span>{isEditing ? 'Actualizar Sucursal' : 'Crear Sucursal'}</span>
                                 </>
                             )}
                         </Button>

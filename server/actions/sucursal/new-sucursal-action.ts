@@ -20,9 +20,12 @@ export const newSucursalAction = actionClient
                     ...(email && { email: email.toLowerCase() }),
                     ...(ruc && { ruc }),
                     ...(razonSocial && { razonSocial: razonSocial.toLowerCase() }),
+                    ...(codigo && { codigo: codigo.toLowerCase() }),
                     ...(isActive !== undefined && { activo: isActive }),
                 }).where(eq(sucursal.id, id)).returning();
                 revalidatePath(`/dashboard/sucursales`);
+                revalidatePath(`/dashboard/vendedores`);
+                revalidatePath(`/dashboard/usuarios`);
                 return { ok: true, msg: "Sucursal actualizada exitosamente", sucursal: updated };
             }
             const [created] = await db.insert(sucursal).values({
