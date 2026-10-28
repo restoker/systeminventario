@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { UserPlusIcon, XIcon, CheckIcon, Loader2Icon, UserCheckIcon } from 'lucide-react'
+import { UserPlusIcon, XIcon, CheckIcon, Loader2Icon, UserCheckIcon, PlusIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAction } from 'next-safe-action/hooks'
@@ -20,12 +20,16 @@ interface ModalNuevoVendedorProps {
   isOpen: boolean
   onClose: () => void
   userToEdit?: Usuario | null
+  sucursales: { id: string; nombre: string }[]
+  onOpenNewSucursal?: () => void
 }
 
 export default function ModalNuevoVendedor({
   isOpen,
   onClose,
-  userToEdit
+  userToEdit,
+  sucursales,
+  onOpenNewSucursal
 }: ModalNuevoVendedorProps) {
   const [loadingUser, setLoadingUser] = useState<boolean>(false)
   const router = useRouter()
@@ -37,6 +41,7 @@ export default function ModalNuevoVendedor({
     handleSubmit,
     reset,
     setValue,
+    setError,
     formState: { errors }
   } = useForm<RegisterSchema>({
     resolver: zodResolver(registerSchema),
@@ -47,14 +52,19 @@ export default function ModalNuevoVendedor({
       phone: '',
       password: '',
       confirmPassword: '',
-      role: 'saler' as const
+      role: 'saler' as const,
+      sucursalId: ''
     }
   })
 
-  const checkUser = async () => {
-    if (editMode) {
+  useEffect(() => {
+    if (!editMode) return
+    let isMounted = true
+
+    const checkUser = async () => {
       setLoadingUser(true)
       const { ok, data: user, msg } = await getUserAction(editMode)
+      if (!isMounted) return
       setLoadingUser(false)
 
       if (!ok) {
@@ -72,15 +82,16 @@ export default function ModalNuevoVendedor({
         setValue('role', (user.role as 'admin' | 'saler') || 'saler')
         setValue('password', '')
         setValue('confirmPassword', '')
+        // Un vendedor tiene una sola sucursal: se precarga la primera asignada.
+        setValue('sucursalId', user.sucursales?.[0]?.id ?? '')
       }
     }
-  }
 
-  useEffect(() => {
-    if (editMode) {
-      checkUser()
+    void checkUser()
+    return () => {
+      isMounted = false
     }
-  }, [editMode])
+  }, [editMode, router, setValue])
 
   const { execute, status } = useAction(registerAction, {
     onSuccess: ({ data }) => {
@@ -127,6 +138,11 @@ export default function ModalNuevoVendedor({
   if (!isOpen) return null
 
   const onSubmit = (formData: RegisterSchema) => {
+    // El schema la deja opcional (lo comparte el registro público); aquí es obligatoria.
+    if (!formData.sucursalId) {
+      setError('sucursalId', { message: 'Seleccione una sucursal' })
+      return
+    }
     execute({
       ...formData,
       role: 'saler',
@@ -248,6 +264,60 @@ export default function ModalNuevoVendedor({
               />
               {errors.email && (
                 <p className='text-[11px] text-destructive'>{errors.email.message}</p>
+              )}
+            </div>
+
+            {/* Sucursal asignada */}
+            <div className='space-y-1.5 sm:col-span-2'>
+              <div className='flex items-center justify-between'>
+                <Label htmlFor='sucursalId' className='text-xs font-medium text-foreground'>
+                  Sucursal <span className='text-destructive'>*</span>
+                </Label>
+                {sucursales.length === 0 && onOpenNewSucursal && (
+                  <button
+                    type='button'
+                    onClick={onOpenNewSucursal}
+                    className='inline-flex items-center gap-1 text-xs text-primary hover:underline cursor-pointer font-medium'
+                  >
+                    <PlusIcon className='size-3' />
+                    <span>Crear nueva sucursal</span>
+                  </button>
+                )}
+              </div>
+              <select
+                id='sucursalId'
+                {...register('sucursalId')}
+                disabled={isPending || loadingUser || sucursales.length === 0}
+                className={`h-9 w-full rounded-md border bg-transparent px-3 text-sm shadow-xs outline-none capitalize focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50 dark:bg-input/30 ${errors.sucursalId ? 'border-destructive focus-visible:ring-destructive/30' : 'border-input'}`}
+              >
+                <option value=''>
+                  {sucursales.length === 0 ? 'No hay sucursales activas' : 'Seleccione una sucursal'}
+                </option>
+                {sucursales.map(s => (
+                  <option key={s.id} value={s.id} className='capitalize'>
+                    {s.nombre}
+                  </option>
+                ))}
+              </select>
+              {sucursales.length === 0 && (
+                <div className='flex items-center justify-between rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300'>
+                  <span>No hay sucursales disponibles. Debes crear una antes de guardar.</span>
+                  {onOpenNewSucursal && (
+                    <Button
+                      type='button'
+                      size='xs'
+                      variant='outline'
+                      onClick={onOpenNewSucursal}
+                      className='ml-2 h-6 text-[11px] border-amber-500/30 bg-background hover:bg-amber-500/20 text-foreground cursor-pointer gap-1'
+                    >
+                      <PlusIcon className='size-3' />
+                      Crear Sucursal
+                    </Button>
+                  )}
+                </div>
+              )}
+              {errors.sucursalId && (
+                <p className='text-[11px] text-destructive'>{errors.sucursalId.message}</p>
               )}
             </div>
 

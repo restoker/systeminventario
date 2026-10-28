@@ -19,6 +19,7 @@ import { igv } from "./igv";
 import { imagenProducto } from "./imagen-producto";
 import { comision } from "./comision";
 import { configuracion } from "./configuracion";
+import { usuarioSucursal } from "./usuario-sucursal";
 
 export default {
     users,
@@ -52,4 +53,5 @@ export default {
     imagenProducto,
     comision,
     configuracion,
+    usuarioSucursal,
 }

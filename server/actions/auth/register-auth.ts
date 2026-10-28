@@ -10,10 +10,11 @@ import { hashPassword } from "better-auth/crypto";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
+import { reemplazarSucursalesUsuario } from "@/server/services/usuario-sucursal";
 
 export const registerAction = actionClient
     .inputSchema(registerSchema)
-    .action(async ({ parsedInput: { email, password, id, name, phone, username } }) => {
+    .action(async ({ parsedInput: { email, password, id, name, phone, username, sucursalId } }) => {
 
         try {
             // const session = await auth.api.getSession({ headers: await headers() });
@@ -52,6 +53,12 @@ export const registerAction = actionClient
                         .where(eq(accounts.userId, id));
                 }
 
+                // Si se envió una sucursal, reemplaza la asignación actual del vendedor.
+                if (sucursalId) {
+                    const asignacion = await reemplazarSucursalesUsuario(id, [sucursalId]);
+                    if (!asignacion.ok) return asignacion;
+                }
+
                 revalidatePath('/dashboard/vendedores');
                 return { ok: true, msg: 'Vendedor actualizado exitosamente', user: updatedUser };
             }
@@ -63,7 +70,7 @@ export const registerAction = actionClient
             if (existingUser) return { ok: false, msg: 'El usuario ya existe' }
 
             // crear un nuevo usuario
-            await api.signUpEmail({
+            const { user: nuevoUsuario } = await api.signUpEmail({
                 body: {
                     name: name.toLowerCase(), // required
                     email: email.toLowerCase(), // required
@@ -74,6 +81,16 @@ export const registerAction = actionClient
                     role: "saler",
                 },
             })
+
+            // Asigna la sucursal al vendedor recién creado.
+            if (sucursalId) {
+                const asignacion = await reemplazarSucursalesUsuario(nuevoUsuario.id, [sucursalId]);
+                if (!asignacion.ok) {
+                    return { ok: false, msg: `Usuario creado, pero no se pudo asignar la sucursal: ${asignacion.msg}` };
+                }
+            }
+
+            revalidatePath('/dashboard/vendedores');
             return { ok: true, msg: 'Registro exitoso' }
         } catch (e) {
             if (e instanceof APIError) {

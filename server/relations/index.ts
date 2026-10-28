@@ -17,17 +17,60 @@ import { imagenProducto } from "../schema/imagen-producto";
 import { tipoDocumento } from "../schema/tipo-documento";
 import { comision } from "../schema/comision";
 import { configuracion } from "../schema/configuracion";
+import { caja } from "../schema/caja";
+import { comprobante } from "../schema/comprobante";
+import { usuarioSucursal } from "../schema/usuario-sucursal";
 
-export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta, kardex, igv, imagenProducto, tipoDocumento, comision, configuracion }, (r) => ({
+export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta, kardex, igv, imagenProducto, tipoDocumento, comision, configuracion, caja, comprobante, usuarioSucursal }, (r) => ({
     users: {
+        // 1:N — sesiones de Better Auth del usuario.
         sessions: r.many.sessions({
             from: r.users.id,
             to: r.sessions.userId
         }),
+        // 1:N — cuentas (credenciales/proveedores) de Better Auth.
         accounts: r.many.accounts({
             from: r.users.id,
             to: r.accounts.userId
-        })
+        }),
+        // N:M — sucursales donde el usuario puede vender, a través de `usuario_sucursal`.
+        // admin → varias; saler → una sola (validado al asignar).
+        // Uso: db.query.users.findFirst({ with: { sucursales: true } })
+        sucursales: r.many.sucursal({
+            from: r.users.id.through(r.usuarioSucursal.userId),
+            to: r.sucursal.id.through(r.usuarioSucursal.sucursalId),
+        }),
+        // 1:N — filas de la tabla intermedia (útil para ver fecha de asignación).
+        asignacionesSucursal: r.many.usuarioSucursal({
+            from: r.users.id,
+            to: r.usuarioSucursal.userId,
+        }),
+        // 1:N — cajas abiertas por el usuario.
+        cajas: r.many.caja({
+            from: r.users.id,
+            to: r.caja.userId,
+        }),
+        // 1:N — ventas realizadas por el usuario (columna `ventas.vendedor`).
+        ventas: r.many.venta({
+            from: r.users.id,
+            to: r.venta.vendedor,
+        }),
+        // 1:N — comisiones configuradas para el vendedor.
+        comisiones: r.many.comision({
+            from: r.users.id,
+            to: r.comision.vendedorId,
+        }),
+    },
+    // Tabla intermedia usuario ↔ sucursal: cada fila apunta a UN usuario y UNA sucursal.
+    usuarioSucursal: {
+        user: r.one.users({
+            from: r.usuarioSucursal.userId,
+            to: r.users.id,
+        }),
+        sucursal: r.one.sucursal({
+            from: r.usuarioSucursal.sucursalId,
+            to: r.sucursal.id,
+        }),
     },
     sessions: {
         user: r.one.users({
@@ -113,6 +156,93 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
             from: r.sucursal.id,
             to: r.traslado.sucursalDestinoId,
             alias: "traslado_destino",
+        }),
+        // N:M — usuarios que pueden vender en esta sucursal (inversa de users.sucursales).
+        usuarios: r.many.users({
+            from: r.sucursal.id.through(r.usuarioSucursal.sucursalId),
+            to: r.users.id.through(r.usuarioSucursal.userId),
+        }),
+        // 1:N — cajas de la sucursal.
+        cajas: r.many.caja({
+            from: r.sucursal.id,
+            to: r.caja.sucursalId,
+        }),
+        // 1:N — ventas registradas en la sucursal.
+        ventas: r.many.venta({
+            from: r.sucursal.id,
+            to: r.venta.sucursalId,
+        }),
+    },
+    // Caja: pertenece a UN usuario y a UNA sucursal; agrupa muchas ventas.
+    caja: {
+        usuario: r.one.users({
+            from: r.caja.userId,
+            to: r.users.id,
+        }),
+        sucursal: r.one.sucursal({
+            from: r.caja.sucursalId,
+            to: r.sucursal.id,
+        }),
+        ventas: r.many.venta({
+            from: r.caja.id,
+            to: r.venta.cajaId,
+        }),
+    },
+    // Venta: es el lado "N" de todas sus FKs, por eso todas son `one`.
+    venta: {
+        sucursal: r.one.sucursal({
+            from: r.venta.sucursalId,
+            to: r.sucursal.id,
+        }),
+        caja: r.one.caja({
+            from: r.venta.cajaId,
+            to: r.caja.id,
+        }),
+        usuario: r.one.users({
+            from: r.venta.vendedor,
+            to: r.users.id,
+        }),
+        metodoPago: r.one.tipoPago({
+            from: r.venta.metodoPagoId,
+            to: r.tipoPago.id,
+        }),
+        // Opcional: comprobanteId es nullable.
+        comprobante: r.one.comprobante({
+            from: r.venta.comprobanteId,
+            to: r.comprobante.id,
+        }),
+    },
+    // Comprobante: tipo, tipo de documento y usuario que lo creó.
+    comprobante: {
+        tipoComprobante: r.one.tipoComprobante({
+            from: r.comprobante.tipoComprobanteId,
+            to: r.tipoComprobante.id,
+        }),
+        tipoDocumento: r.one.tipoDocumento({
+            from: r.comprobante.tipoDocumentoId,
+            to: r.tipoDocumento.id,
+        }),
+        creadoPor: r.one.users({
+            from: r.comprobante.createdByUserId,
+            to: r.users.id,
+        }),
+        ventas: r.many.venta({ //TODO: ⚠️ revisar esta relacion, ya que solamente se puede emitir un comprobante por venta, no muchas.
+            from: r.comprobante.id,
+            to: r.venta.comprobanteId,
+        }),
+    },
+    // Comisión: pertenece a UN vendedor.
+    comision: {
+        vendedor: r.one.users({
+            from: r.comision.vendedorId,
+            to: r.users.id,
+        }),
+    },
+    // Método de pago: usado por muchas ventas.
+    tipoPago: {
+        ventas: r.many.venta({
+            from: r.tipoPago.id,
+            to: r.venta.metodoPagoId,
         }),
     },
     stockSucursal: {

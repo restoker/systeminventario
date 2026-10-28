@@ -5,7 +5,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Building2Icon, XIcon, CheckIcon, Loader2Icon } from 'lucide-react';
 import { toast } from 'sonner';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 
 import { Sucursal } from '@/interfaces';
@@ -29,8 +29,9 @@ export default function ModalSucursalForm({
 }: ModalSucursalFormProps) {
     const [loadingCategoria, setLoadingCategoria] = useState<boolean>(false);
     const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
-    const editMode = searchParams.get('id');
+    const editMode = pathname?.includes('/dashboard/sucursales') ? searchParams.get('id') : null;
 
     const {
         control,

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useId, useMemo, useState } from 'react'
+import React, { useId, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { ColumnDef } from '@tanstack/react-table'
 import {
@@ -29,11 +29,14 @@ import {
   UserPlusIcon,
   UsersIcon,
   CheckIcon,
-  EditIcon
+  EditIcon,
+  Building2Icon,
+  PlusIcon
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Usuario } from '@/interfaces'
+import ModalSucursalForm from '@/app/(home)/dashboard/sucursales/_ui/ModalSucursalForm'
 import { usePagination } from '@/hooks/use-pagination'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -68,6 +71,7 @@ import ModalNuevoVendedor from './ModalNuevoVendedor'
 
 interface TableVendedoresProps {
   vendedores: Usuario[]
+  sucursales: { id: string; nombre: string }[]
 }
 
 const features = tableFeatures({
@@ -76,7 +80,7 @@ const features = tableFeatures({
   paginatedRowModel: createPaginatedRowModel()
 })
 
-export default function TableVendedores({ vendedores }: TableVendedoresProps) {
+export default function TableVendedores({ vendedores, sucursales }: TableVendedoresProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const editMode = searchParams.get('id')
@@ -85,14 +89,11 @@ export default function TableVendedores({ vendedores }: TableVendedoresProps) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'unverified'>('all')
   const [selectedSeller, setSelectedSeller] = useState<Usuario | null>(null)
   const [isNewSellerModalOpen, setIsNewSellerModalOpen] = useState(false)
+  const [isNewSucursalModalOpen, setIsNewSucursalModalOpen] = useState(false)
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const searchInputId = useId()
 
-  useEffect(() => {
-    if (editMode) {
-      setIsNewSellerModalOpen(true)
-    }
-  }, [editMode])
+  const isSellerModalOpen = isNewSellerModalOpen || Boolean(editMode)
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text)
@@ -259,10 +260,10 @@ export default function TableVendedores({ vendedores }: TableVendedoresProps) {
                   <EllipsisVerticalIcon className='size-4' aria-hidden='true' />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align='end' className='w-48'>
-                  <DropdownMenuLabel className='text-xs text-muted-foreground'>
-                    Acciones
-                  </DropdownMenuLabel>
                   <DropdownMenuGroup>
+                    <DropdownMenuLabel className='text-xs text-muted-foreground'>
+                      Acciones
+                    </DropdownMenuLabel>
                     <DropdownMenuItem
                       onClick={() => setSelectedSeller(seller)}
                       className='cursor-pointer gap-2 text-xs'
@@ -313,7 +314,7 @@ export default function TableVendedores({ vendedores }: TableVendedoresProps) {
         enableHiding: false
       }
     ],
-    []
+    [router]
   )
 
   const table = useTable(
@@ -355,6 +356,27 @@ export default function TableVendedores({ vendedores }: TableVendedoresProps) {
   return (
     <>
       <div className='w-full rounded-xl border bg-card shadow-xs overflow-hidden'>
+        {/* Banner de aviso si no existen sucursales */}
+        {sucursales.length === 0 && (
+          <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-5 py-3 bg-amber-500/10 border-b border-amber-500/20 text-xs text-amber-900 dark:text-amber-200'>
+            <div className='flex items-center gap-2.5'>
+              <Building2Icon className='size-4 text-amber-600 dark:text-amber-400 shrink-0' />
+              <span>
+                <strong>Atención:</strong> No hay sucursales activas registradas. Para asignar vendedores es necesario contar con al menos una sucursal.
+              </span>
+            </div>
+            <Button
+              size='sm'
+              variant='outline'
+              onClick={() => setIsNewSucursalModalOpen(true)}
+              className='h-7 px-2.5 text-xs font-medium border-amber-500/30 bg-background text-foreground hover:bg-amber-500/20 cursor-pointer shrink-0 gap-1.5'
+            >
+              <PlusIcon className='size-3 text-amber-600 dark:text-amber-400' />
+              <span>Crear Sucursal</span>
+            </Button>
+          </div>
+        )}
+
         {/* Toolbar: Search, Status Filter, Page Size, New Seller Action */}
         <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 border-b bg-card/60 backdrop-blur-xs'>
           <div className='flex flex-wrap items-center gap-2.5 flex-1'>
@@ -439,6 +461,18 @@ export default function TableVendedores({ vendedores }: TableVendedoresProps) {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Botón para crear sucursal si no hubiera alguna creada */}
+            {sucursales.length === 0 && (
+              <Button
+                variant='outline'
+                onClick={() => setIsNewSucursalModalOpen(true)}
+                className='h-9 gap-1.5 shadow-xs cursor-pointer text-xs font-medium border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20'
+              >
+                <Building2Icon className='size-3.5' />
+                <span>Crear Sucursal</span>
+              </Button>
+            )}
 
             {/* New Seller Button */}
             <Button
@@ -856,8 +890,19 @@ export default function TableVendedores({ vendedores }: TableVendedoresProps) {
 
       {/* Modal to Register a New Seller */}
       <ModalNuevoVendedor
-        isOpen={isNewSellerModalOpen}
-        onClose={() => setIsNewSellerModalOpen(false)}
+        isOpen={isSellerModalOpen}
+        onClose={() => {
+          setIsNewSellerModalOpen(false)
+          if (editMode) router.push('/dashboard/vendedores')
+        }}
+        sucursales={sucursales}
+        onOpenNewSucursal={() => setIsNewSucursalModalOpen(true)}
+      />
+
+      {/* Modal para Crear Sucursal */}
+      <ModalSucursalForm
+        isOpen={isNewSucursalModalOpen}
+        onClose={() => setIsNewSucursalModalOpen(false)}
       />
     </>
   )

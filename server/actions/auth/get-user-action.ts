@@ -7,6 +7,9 @@ export const getUserAction = async (id: string) => {
     const user = await db.query.users.findFirst({
       where: {
         id: id
+      },
+      with: {
+        sucursales: { columns: { id: true, nombre: true } }
       }
     });
     if (!user) return { ok: false, msg: 'Usuario no encontrado', data: null };

@@ -13,6 +13,13 @@ export default async function VendedoresPage() {
     orderBy: { createdAt: 'desc' }
   })
 
+  // Sucursales activas disponibles para asignar a un vendedor.
+  const sucursales = await db.query.sucursal.findMany({
+    where: { activo: { eq: true } },
+    columns: { id: true, nombre: true },
+    orderBy: { nombre: 'asc' }
+  })
+
   const totalVendedores = vendedores.length
   const totalVerificados = vendedores.filter(v => v.emailVerified).length
   const totalPendientes = totalVendedores - totalVerificados
@@ -74,7 +81,7 @@ export default async function VendedoresPage() {
         </div>
 
         {/* Vendedores Data Table */}
-        <TableVendedores vendedores={vendedores} />
+        <TableVendedores vendedores={vendedores} sucursales={sucursales} />
       </div>
     </SidebarAux>
   )

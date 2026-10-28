@@ -10,6 +10,9 @@ export const registerSchema = z.object({
     phone: z.string().regex(/^9\d{8}$/, 'El teléfono debe tener 9 dígitos y empezar con 9'),
     confirmPassword: z.string().max(20, 'La contraseña debe tener menos de 20 caracteres'),
     role: z.enum(["admin", "saler"]).optional(),
+    // Opcional aquí porque RegisterForm (registro público) también usa este schema.
+    // El modal de vendedores lo exige antes de enviar.
+    sucursalId: z.string().optional(),
 }).superRefine((data, ctx) => {
     if (!data.id) {
         if (!data.password || data.password.length < 4) {
