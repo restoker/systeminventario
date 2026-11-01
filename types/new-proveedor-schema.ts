@@ -11,6 +11,7 @@ export const newProveedorSchema = z.object({
     email: z.email('El correo electrónico no es válido').or(z.literal('')).optional(),
     razonSocial: z.string().optional(),
     direccion: z.string().optional(),
+    tipoDocumentoId: z.string().min(1, 'Debe seleccionar el tipo de documento'),
 });
 
 export type NewProveedorType = z.infer<typeof newProveedorSchema>;

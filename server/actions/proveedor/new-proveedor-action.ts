@@ -9,7 +9,7 @@ import { revalidatePath } from "next/cache";
 
 export const newProveedorAction = actionClient
     .inputSchema(newProveedorSchema)
-    .action(async ({ parsedInput: { id, nombre, numeroDocumento, telefono, email, razonSocial, direccion } }) => {
+    .action(async ({ parsedInput: { id, nombre, numeroDocumento, telefono, email, razonSocial, direccion, tipoDocumentoId } }) => {
         try {
             const cleanNombre = nombre.trim();
             const cleanDoc = numeroDocumento?.trim() || null;
@@ -17,6 +17,12 @@ export const newProveedorAction = actionClient
             const cleanEmail = email?.trim() || null;
             const cleanRazon = razonSocial?.trim() || null;
             const cleanDir = direccion?.trim() || null;
+
+            const tipoDocumentoExiste = await db.query.tipoDocumento.findFirst({
+                where: { id: { eq: tipoDocumentoId } }
+            })
+
+            if (!tipoDocumentoExiste) return { ok: false, msg: "Tipo de documento no encontrado" };
 
             if (id) {
                 // Verificar si existe otro proveedor con el mismo nombre
@@ -50,6 +56,7 @@ export const newProveedorAction = actionClient
                     email: cleanEmail ? cleanEmail.toLowerCase() : null,
                     razonSocial: cleanRazon ? cleanRazon.toLowerCase() : null,
                     direccion: cleanDir ? cleanDir.toLowerCase() : null,
+                    ...(tipoDocumentoId && { tipoDocumentoId }),
                 }).where(eq(proveedor.id, id)).returning();
 
                 revalidatePath("/dashboard/proveedores");
@@ -89,6 +96,7 @@ export const newProveedorAction = actionClient
                 razonSocial: cleanRazon ? cleanRazon.toLowerCase() : null,
                 direccion: cleanDir ? cleanDir.toLowerCase() : null,
                 activo: true,
+                tipoDocumentoId: tipoDocumentoExiste.id,
             }).returning();
 
             revalidatePath("/dashboard/proveedores");

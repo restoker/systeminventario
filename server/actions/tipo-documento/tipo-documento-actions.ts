@@ -80,3 +80,16 @@ export const deleteTipoDocumentoAction = actionClient
             return { ok: false, msg: "Error al eliminar el tipo de documento" };
         }
     });
+
+export const getTipoDocumentosAction = async () => {
+    try {
+        const docs = await db.query.tipoDocumento.findMany({
+            where: { estado: true },
+            orderBy: (t, { asc }) => [asc(t.nombre)],
+        });
+        return { ok: true, data: docs };
+    } catch (error) {
+        console.error(error);
+        return { ok: false, data: [] };
+    }
+};

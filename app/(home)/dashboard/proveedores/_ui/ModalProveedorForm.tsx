@@ -14,20 +14,22 @@ import {
     Phone,
     Mail,
     FileText,
-    CheckCircle2
+    CheckCircle2,
+    ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAction } from 'next-safe-action/hooks';
 import { newProveedorAction } from '@/server/actions/proveedor/new-proveedor-action';
-import { getRucBusiness } from '@/server/actions/get-info-dni-ruc';
+import { getRucBusiness, getInfoDocumento } from '@/server/actions/get-info-dni-ruc';
 import { newProveedorSchema, NewProveedorType } from '@/types/new-proveedor-schema';
-import { Proveedor } from '@/interfaces';
+import { Proveedor, TipoDocumentoDto } from '@/interfaces';
 
 interface ModalProveedorFormProps {
     isOpen: boolean;
     onClose: () => void;
     proveedorToEdit?: Proveedor | null;
     onSuccess?: (proveedor: Proveedor) => void;
+    tipoDocumentos: TipoDocumentoDto[];
 }
 
 const inputBaseClass =
@@ -38,9 +40,10 @@ export default function ModalProveedorForm({
     onClose,
     proveedorToEdit,
     onSuccess,
+    tipoDocumentos,
 }: ModalProveedorFormProps) {
     const isEditing = Boolean(proveedorToEdit?.id);
-    const [isSearchingRuc, setIsSearchingRuc] = useState(false);
+    const [isSearchingDoc, setIsSearchingDoc] = useState(false);
     const [sunatStatus, setSunatStatus] = useState<string | null>(null);
 
     const {
@@ -54,6 +57,7 @@ export default function ModalProveedorForm({
         resolver: zodResolver(newProveedorSchema),
         defaultValues: {
             id: '',
+            tipoDocumentoId: '',
             nombre: '',
             numeroDocumento: '',
             telefono: '',
@@ -64,6 +68,18 @@ export default function ModalProveedorForm({
     });
 
     const currentDoc = watch('numeroDocumento');
+    const selectedTipoDocId = watch('tipoDocumentoId');
+
+    const selectedTipoDoc = tipoDocumentos.find((d) => d.id === selectedTipoDocId);
+    const isRuc = selectedTipoDoc?.nombre?.toUpperCase() === 'RUC';
+    const isDni = selectedTipoDoc?.nombre?.toUpperCase() === 'DNI';
+    const canSearch = isRuc || isDni;
+    const isDocBlocked = !selectedTipoDocId;
+
+    // Resetear status al cambiar de tipo de documento
+    useEffect(() => {
+        setSunatStatus(null);
+    }, [selectedTipoDocId]);
 
     // Inicializar o resetear valores cuando cambia el proveedor a editar o se abre el modal
     useEffect(() => {
@@ -72,6 +88,7 @@ export default function ModalProveedorForm({
             if (proveedorToEdit) {
                 reset({
                     id: proveedorToEdit.id,
+                    tipoDocumentoId: proveedorToEdit.tipoDocumentoId || '',
                     nombre: proveedorToEdit.nombre || '',
                     numeroDocumento: proveedorToEdit.numeroDocumento || '',
                     telefono: proveedorToEdit.telefono || '',
@@ -82,6 +99,7 @@ export default function ModalProveedorForm({
             } else {
                 reset({
                     id: '',
+                    tipoDocumentoId: '',
                     nombre: '',
                     numeroDocumento: '',
                     telefono: '',
@@ -113,42 +131,59 @@ export default function ModalProveedorForm({
 
     const isPending = status === 'executing';
 
-    // Búsqueda automática / manual en SUNAT vía RUC
-    const handleSearchSunat = async () => {
-        const ruc = currentDoc?.trim();
-        if (!ruc) {
-            toast.error('Ingresa un número de RUC para consultar');
+    // Búsqueda en SUNAT / RENIEC según el tipo de documento
+    const handleSearchDoc = async () => {
+        const doc = currentDoc?.trim();
+        if (!doc) {
+            toast.error('Ingresa un número de documento para consultar');
             return;
         }
 
-        if (ruc.length !== 11) {
+        if (isRuc && doc.length !== 11) {
             toast.error('El RUC debe tener 11 dígitos');
             return;
         }
 
-        setIsSearchingRuc(true);
+        if (isDni && doc.length !== 8) {
+            toast.error('El DNI debe tener 8 dígitos');
+            return;
+        }
+
+        setIsSearchingDoc(true);
         setSunatStatus(null);
 
         try {
-            const res = await getRucBusiness(ruc);
-            if (res && res.ok && res.data) {
-                const { name, address, status } = res.data;
-                setValue('razonSocial', name || '');
-                if (!watch('nombre') || watch('nombre').trim() === '') {
-                    setValue('nombre', name || '');
+            if (isRuc) {
+                const res = await getRucBusiness(doc);
+                if (res && res.ok && res.data) {
+                    const { name, address, status } = res.data;
+                    setValue('razonSocial', name || '');
+                    if (!watch('nombre') || watch('nombre').trim() === '') {
+                        setValue('nombre', name || '');
+                    }
+                    setValue('direccion', address?.trim() || '');
+                    setSunatStatus(status || 'OK');
+                    toast.success('Datos obtenidos exitosamente de SUNAT');
+                } else {
+                    toast.error(res?.msg || 'No se encontró información para el RUC ingresado');
+                    setSunatStatus(null);
                 }
-                setValue('direccion', address?.trim() || '');
-                setSunatStatus(status || 'OK');
-                toast.success('Datos obtenidos exitosamente de SUNAT');
-            } else {
-                toast.error(res?.msg || 'No se encontró información para el RUC ingresado');
-                setSunatStatus(null);
+            } else if (isDni && selectedTipoDocId) {
+                const res = await getInfoDocumento(selectedTipoDocId, doc);
+                if (res && res.ok && res.data && 'nombres' in res.data) {
+                    const fullName = `${res.data.nombres} ${res.data.apellidos}`.trim();
+                    setValue('nombre', fullName);
+                    setValue('razonSocial', fullName);
+                    toast.success('Datos obtenidos exitosamente de RENIEC');
+                } else {
+                    toast.error(res?.msg || 'No se encontró información para el DNI ingresado');
+                }
             }
         } catch (error) {
             console.error(error);
-            toast.error('Error al conectar con el servicio de SUNAT');
+            toast.error('Error al conectar con el servicio de consulta');
         } finally {
-            setIsSearchingRuc(false);
+            setIsSearchingDoc(false);
         }
     };
 
@@ -210,7 +245,50 @@ export default function ModalProveedorForm({
                 {/* Formulario */}
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div className="space-y-3.5">
-                        {/* RUC / Documento con Consulta SUNAT */}
+                        {/* Tipo de Documento */}
+                        <div>
+                            <label
+                                htmlFor="provTipoDoc"
+                                className="block text-xs font-medium text-foreground mb-1"
+                            >
+                                Tipo de Documento <span className="text-destructive">*</span>
+                            </label>
+                            <div className="relative">
+                                <Controller
+                                    control={control}
+                                    name="tipoDocumentoId"
+                                    render={({ field }) => (
+                                        <select
+                                            {...field}
+                                            id="provTipoDoc"
+                                            autoFocus={!isEditing}
+                                            disabled={isPending}
+                                            className={`${inputBaseClass} pr-8 appearance-none cursor-pointer ${
+                                                errors.tipoDocumentoId
+                                                    ? 'border-destructive focus:border-destructive focus:ring-destructive'
+                                                    : ''
+                                            }`}
+                                        >
+                                            <option value="">Seleccione un tipo de documento...</option>
+                                            {tipoDocumentos.map((doc) => (
+                                                <option key={doc.id} value={doc.id}>
+                                                    {doc.nombre}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+                                />
+                                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                            </div>
+                            {errors.tipoDocumentoId && (
+                                <p className="mt-1 flex items-center gap-1 text-xs text-destructive">
+                                    <CircleAlert className="size-3 shrink-0" />
+                                    {errors.tipoDocumentoId.message}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Número de Documento */}
                         <div>
                             <div className="flex items-center justify-between mb-1">
                                 <label
@@ -218,7 +296,16 @@ export default function ModalProveedorForm({
                                     className="text-xs font-medium text-foreground flex items-center gap-1.5"
                                 >
                                     <FileText className="size-3.5 text-muted-foreground" />
-                                    <span>RUC / N° de Identificación</span>
+                                    <span>
+                                        {selectedTipoDoc
+                                            ? `N° de ${selectedTipoDoc.nombre}`
+                                            : 'N° de Identificación'}
+                                    </span>
+                                    {isDocBlocked && (
+                                        <span className="text-[10px] text-muted-foreground/80 font-normal">
+                                            (bloqueado)
+                                        </span>
+                                    )}
                                 </label>
                                 {sunatStatus && (
                                     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
@@ -237,34 +324,66 @@ export default function ModalProveedorForm({
                                                 {...field}
                                                 id="provDoc"
                                                 type="text"
-                                                maxLength={20}
-                                                placeholder="Ej. 20601234567"
-                                                className={`${inputBaseClass} font-mono`}
+                                                disabled={isDocBlocked || isPending}
+                                                maxLength={isRuc ? 11 : isDni ? 8 : 20}
+                                                placeholder={
+                                                    isDocBlocked
+                                                        ? 'Seleccione un tipo de documento primero'
+                                                        : isRuc
+                                                        ? 'Ej. 20601234567 (11 dígitos)'
+                                                        : isDni
+                                                        ? 'Ej. 12345678 (8 dígitos)'
+                                                        : 'Ej. 123456789'
+                                                }
+                                                className={`${inputBaseClass} font-mono ${
+                                                    isDocBlocked
+                                                        ? 'opacity-60 cursor-not-allowed bg-muted/40 dark:bg-muted/20'
+                                                        : ''
+                                                } ${
+                                                    errors.numeroDocumento
+                                                        ? 'border-destructive focus:border-destructive focus:ring-destructive'
+                                                        : ''
+                                                }`}
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter') {
                                                         e.preventDefault();
-                                                        handleSearchSunat();
+                                                        if (canSearch && !isDocBlocked) {
+                                                            handleSearchDoc();
+                                                        }
                                                     }
                                                 }}
                                             />
                                         )}
                                     />
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={handleSearchSunat}
-                                    disabled={isSearchingRuc || !currentDoc}
-                                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground hover:bg-secondary/80 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                                    title="Consultar padrón SUNAT"
-                                >
-                                    {isSearchingRuc ? (
-                                        <Loader2 className="size-3.5 animate-spin" />
-                                    ) : (
-                                        <Search className="size-3.5" />
-                                    )}
-                                    <span>Buscar RUC</span>
-                                </button>
+                                {canSearch && (
+                                    <button
+                                        type="button"
+                                        onClick={handleSearchDoc}
+                                        disabled={isDocBlocked || isSearchingDoc || !currentDoc}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground hover:bg-secondary/80 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                                        title={isRuc ? 'Consultar padrón SUNAT' : 'Consultar datos DNI'}
+                                    >
+                                        {isSearchingDoc ? (
+                                            <Loader2 className="size-3.5 animate-spin" />
+                                        ) : (
+                                            <Search className="size-3.5" />
+                                        )}
+                                        <span>{isRuc ? 'Buscar RUC' : isDni ? 'Buscar DNI' : 'Buscar'}</span>
+                                    </button>
+                                )}
                             </div>
+                            {isDocBlocked && (
+                                <p className="mt-1 text-[11px] text-muted-foreground">
+                                    Debe seleccionar un tipo de documento para ingresar el número.
+                                </p>
+                            )}
+                            {errors.numeroDocumento && (
+                                <p className="mt-1 flex items-center gap-1 text-xs text-destructive">
+                                    <CircleAlert className="size-3 shrink-0" />
+                                    {errors.numeroDocumento.message}
+                                </p>
+                            )}
                         </div>
 
                         {/* Nombre Comercial */}
@@ -283,7 +402,6 @@ export default function ModalProveedorForm({
                                         {...field}
                                         id="provNombre"
                                         type="text"
-                                        autoFocus={!isEditing}
                                         placeholder="Ej. Distribuidora Andes SAC"
                                         className={`${inputBaseClass} ${errors.nombre
                                             ? 'border-destructive focus:border-destructive focus:ring-destructive'

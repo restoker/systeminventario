@@ -29,7 +29,7 @@ import {
     Image as ImageIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Categoria, Igv, Marca, Sucursal, Unidad, Proveedor } from '@/interfaces';
+import { Categoria, Igv, Marca, Sucursal, Unidad, Proveedor, TipoDocumentoDto } from '@/interfaces';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { productoSchema, ProductSchema } from '@/types/producto-schema';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -51,6 +51,7 @@ interface Props {
     proveedor?: Proveedor[];
     unidad: Unidad[];
     marcas: Marca[];
+    tipoDocumentos?: TipoDocumentoDto[];
 }
 
 type ModalType = 'categoria' | 'marca' | 'unidad' | 'igv' | 'sucursal' | 'proveedor' | null;
@@ -62,6 +63,7 @@ export default function FormNewProduct({
     proveedor = [],
     unidad = [],
     marcas = [],
+    tipoDocumentos = [],
 }: Props) {
     const router = useRouter();
 
@@ -1230,6 +1232,7 @@ export default function FormNewProduct({
             <ModalProveedor
                 isOpen={activeModal === 'proveedor'}
                 onClose={() => setActiveModal(null)}
+                tipoDocumentos={tipoDocumentos}
                 onSuccess={(newProv) => {
                     form.setValue('proveedorId', newProv.id, { shouldValidate: true });
                     setActiveModal(null);

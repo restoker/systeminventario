@@ -9,6 +9,7 @@ export interface Proveedor {
     numeroDocumento: string | null;
     activo: boolean | null;
     razonSocial: string | null;
+    tipoDocumentoId?: string | null;
 }
 
 export interface ProveedorWithProductCount extends Proveedor {

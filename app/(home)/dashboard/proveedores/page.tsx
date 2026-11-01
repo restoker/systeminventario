@@ -78,6 +78,7 @@ export default async function ProveedoresPage({ searchParams }: PageProps) {
             nombre: proveedor.nombre,
             razonSocial: proveedor.razonSocial,
             numeroDocumento: proveedor.numeroDocumento,
+            tipoDocumentoId: proveedor.tipoDocumentoId,
             telefono: proveedor.telefono,
             email: proveedor.email,
             direccion: proveedor.direccion,
@@ -94,6 +95,7 @@ export default async function ProveedoresPage({ searchParams }: PageProps) {
             proveedor.nombre,
             proveedor.razonSocial,
             proveedor.numeroDocumento,
+            proveedor.tipoDocumentoId,
             proveedor.telefono,
             proveedor.email,
             proveedor.direccion,
@@ -119,6 +121,10 @@ export default async function ProveedoresPage({ searchParams }: PageProps) {
         totalProductos: Number(r.totalProductos) || 0,
     }));
 
+    const tipoDocumentos = await db.query.tipoDocumento.findMany({
+        orderBy: (t, { asc }) => [asc(t.nombre)],
+    });
+
     return (
         <SidebarAux>
             <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
@@ -135,6 +141,7 @@ export default async function ProveedoresPage({ searchParams }: PageProps) {
                         inactivos: Number(totalInactivos) || 0,
                         conProductos: conProductosTotal,
                     }}
+                    tipoDocumentos={tipoDocumentos}
                 />
             </div>
         </SidebarAux>

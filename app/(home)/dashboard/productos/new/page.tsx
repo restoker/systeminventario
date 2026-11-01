@@ -9,10 +9,21 @@ export default async function NewProductPage() {
     const proveedor = await db.query.proveedor.findMany();
     const unidad = await db.query.unidades.findMany();
     const marcas = await db.query.marcas.findMany();
+    const tipoDocumentos = await db.query.tipoDocumento.findMany({
+        orderBy: (t, { asc }) => [asc(t.nombre)],
+    });
     return (
         <SidebarAux>
             {/* <h1>NewProductPage</h1> */}
-            <FormNewProduct categorias={categorias} sucursales={sucursales} igv={igv} proveedor={proveedor} unidad={unidad} marcas={marcas} />
+            <FormNewProduct
+                categorias={categorias}
+                sucursales={sucursales}
+                igv={igv}
+                proveedor={proveedor}
+                unidad={unidad}
+                marcas={marcas}
+                tipoDocumentos={tipoDocumentos}
+            />
         </SidebarAux>
     );
 }

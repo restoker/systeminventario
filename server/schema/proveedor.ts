@@ -1,5 +1,6 @@
 import { boolean, text } from "drizzle-orm/pg-core";
 import { coreTable } from "./communityShieldColumns";
+import { tipoDocumento } from "./tipo-documento";
 
 export const proveedor = coreTable("proveedor", {
     nombre: text("nombre").notNull(),
@@ -9,6 +10,7 @@ export const proveedor = coreTable("proveedor", {
     numeroDocumento: text("numero_documento").unique(),
     activo: boolean("activo").default(true),
     razonSocial: text("razon_social"),
+    tipoDocumentoId: text("tipo_documento_id").notNull().references(() => tipoDocumento.id),
 });
 
 export type Proveedor = typeof proveedor.$inferSelect;

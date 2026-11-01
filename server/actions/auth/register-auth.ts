@@ -14,7 +14,7 @@ import { reemplazarSucursalesUsuario } from "@/server/services/usuario-sucursal"
 
 export const registerAction = actionClient
     .inputSchema(registerSchema)
-    .action(async ({ parsedInput: { email, password, id, name, phone, username, sucursalId } }) => {
+    .action(async ({ parsedInput: { email, password, id, name, phone, username, sucursalId, role } }) => {
 
         try {
             // const session = await auth.api.getSession({ headers: await headers() });
@@ -63,13 +63,19 @@ export const registerAction = actionClient
                 return { ok: true, msg: 'Vendedor actualizado exitosamente', user: updatedUser };
             }
 
-            // validar si el usuarioo ya existe
+            // Validar si el correo ya existe
             const existingUser = await db.query.users.findFirst({
                 where: { email: { eq: email.toLowerCase() } }
-            })
-            if (existingUser) return { ok: false, msg: 'El usuario ya existe' }
+            });
+            if (existingUser) return { ok: false, msg: 'El correo electrónico ya está registrado' };
 
-            // crear un nuevo usuario
+            // Validar si el nombre de usuario ya existe
+            const existingUsername = await db.query.users.findFirst({
+                where: { username: { eq: username.trim().toLowerCase() } }
+            });
+            if (existingUsername) return { ok: false, msg: 'El nombre de usuario ya está en uso' };
+
+            // Crear un nuevo usuario (sin iniciar sesión automáticamente)
             const { user: nuevoUsuario } = await api.signUpEmail({
                 body: {
                     name: name.toLowerCase(), // required
@@ -78,9 +84,13 @@ export const registerAction = actionClient
                     username: username.trim().toLowerCase(),
                     phone: phone.trim(),
                     callbackURL: '/login',
-                    role: "saler",
+                    role: role || "saler",
                 },
-            })
+            });
+
+            if (!nuevoUsuario) {
+                return { ok: false, msg: 'No se pudo registrar el usuario' };
+            }
 
             // Asigna la sucursal al vendedor recién creado.
             if (sucursalId) {
@@ -91,16 +101,16 @@ export const registerAction = actionClient
             }
 
             revalidatePath('/dashboard/vendedores');
-            return { ok: true, msg: 'Registro exitoso' }
+            return { ok: true, msg: 'Registro exitoso' };
         } catch (e) {
             if (e instanceof APIError) {
                 if (e.statusCode === 401) {
-                    return { ok: false, msg: 'Usuario o contraseña incorrectos' }
+                    return { ok: false, msg: 'Usuario o contraseña incorrectos' };
                 }
                 if (e.statusCode === 400) {
-                    return { ok: false, msg: 'Correo electronico no verificado' }
+                    return { ok: false, msg: e.message || 'Datos de registro inválidos' };
                 }
             }
-            return { ok: false, msg: 'Error al iniciar sesión' }
+            return { ok: false, msg: 'Error al registrar el usuario' };
         }
     })

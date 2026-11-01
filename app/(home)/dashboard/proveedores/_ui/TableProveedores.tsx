@@ -53,7 +53,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { ProveedorWithProductCount } from '@/interfaces';
+import { ProveedorWithProductCount, TipoDocumentoDto } from '@/interfaces';
 import ModalProveedorForm from './ModalProveedorForm';
 import ModalDeleteProveedor from './ModalDeleteProveedor';
 import SheetProveedorDetalle from './SheetProveedorDetalle';
@@ -73,6 +73,7 @@ interface TableProveedoresProps {
     searchQuery: string;
     estadoFilter: string;
     stats: StatsProps;
+    tipoDocumentos: TipoDocumentoDto[];
 }
 
 export default function TableProveedores({
@@ -83,6 +84,7 @@ export default function TableProveedores({
     searchQuery,
     estadoFilter,
     stats,
+    tipoDocumentos
 }: TableProveedoresProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -708,6 +710,7 @@ export default function TableProveedores({
                 isOpen={isFormOpen}
                 onClose={() => setIsFormOpen(false)}
                 proveedorToEdit={proveedorToEdit}
+                tipoDocumentos={tipoDocumentos}
                 onSuccess={() => {
                     router.refresh();
                 }}

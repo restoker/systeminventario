@@ -6,3 +6,4 @@ export * from './proveedor';
 export * from './unidad';
 export * from './productos';
 export * from './usuarios';
+export * from './tipo-documento';
