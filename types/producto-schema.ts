@@ -96,12 +96,14 @@ export const productoSchema = z.object({
     // el stock por sucursal vive en `stock_sucursal`
     nota: z.string().optional(),
     // slug: z.string().min(3, "El slug debe tener al menos 3 caracteres").max(100, "El slug debe tener menos de 100 caracteres"),
-    igv: z.string().min(1, "El IGV es obligatorio"),
+    igvId: z.string().min(1, "El IGV es obligatorio"),
     categoryId: z.string().min(3, "La categoría es obligatoria").max(100, "La categoría debe tener menos de 100 caracteres"),
     marcaId: z.string().min(1, "La marca es obligatoria"),
     unidadId: z.string().min(3, "La unidad es obligatoria").max(100, "La unidad debe tener menos de 100 caracteres"),
     proveedorId: z.string().min(1, "El proveedor es obligatorio"),
     sucursalId: z.string().min(1, "La sucursal es obligatoria"),
+    cantidadInicial: z.number().min(0, "La cantidad debe ser mayor o igual a 0"),
+    stockMinimo: z.number().min(0, "El stock mínimo debe ser mayor o igual a 0"),
 });
 
 export type ProductSchema = z.infer<typeof productoSchema>;

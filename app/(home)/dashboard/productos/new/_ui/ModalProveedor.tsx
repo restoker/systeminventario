@@ -107,9 +107,9 @@ export default function ModalProveedor({ isOpen, onClose, onSuccess, tipoDocumen
                 if (res && res.ok && res.data) {
                     const { name, address, status: rucStatus } = res.data;
                     setValue('razonSocial', name || '');
-                    if (!watch('nombre') || watch('nombre').trim() === '') {
-                        setValue('nombre', name || '');
-                    }
+                    // if (!watch('nombre') || watch('nombre').trim() === '') {
+                    //     setValue('nombre', name || '');
+                    // }
                     setValue('direccion', address?.trim() || '');
                     setSunatStatus(rucStatus || 'OK');
                     toast.success('Datos obtenidos exitosamente de SUNAT');
@@ -129,7 +129,7 @@ export default function ModalProveedor({ isOpen, onClose, onSuccess, tipoDocumen
                 }
             }
         } catch (error) {
-            console.error(error);
+            // console.error(error);
             toast.error('Error al conectar con el servicio de consulta');
         } finally {
             setIsSearchingDoc(false);

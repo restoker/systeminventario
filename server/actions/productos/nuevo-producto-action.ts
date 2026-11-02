@@ -3,18 +3,19 @@
 import { actionClient } from "@/lib/safe-action";
 import { extractFiles, productoSchema } from "@/types/producto-schema";
 import db from "@/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { products } from "@/server/schema/products";
 import { imagenProducto } from "@/server/schema/imagen-producto";
 import { revalidatePath } from "next/cache";
 import { v2 as cloudinary } from 'cloudinary';
 import { extractPublicId } from 'cloudinary-build-url';
+import { stockSucursal } from "@/server/schema/stock-sucursal";
 
 cloudinary.config(process.env.CLOUDINARY_URL ?? '');
 
 export const nuevoProductoAction = actionClient
     .inputSchema(productoSchema)
-    .action(async ({ parsedInput: { id, name, descripcion, precioCompra, precioVenta, image, images, codigo, enConsignacion, nota, categoryId, marcaId, unidadId, proveedorId } }) => {
+    .action(async ({ parsedInput: { id, name, descripcion, precioCompra, precioVenta, image, images, codigo, enConsignacion, nota, categoryId, marcaId, unidadId, proveedorId, igvId, sucursalId, cantidadInicial, stockMinimo } }) => {
         try {
             // Extraer imágenes y limitar estrictamente a un máximo de 3
             const allExtracted = [
@@ -37,6 +38,12 @@ export const nuevoProductoAction = actionClient
             }
 
             const filesToProcess = uniqueFiles.slice(0, 3);
+
+            // Verificar si el igv existe
+            const igvExiste = await db.query.igv.findFirst({
+                where: { id: igvId },
+            });
+            if (!igvExiste) return { ok: false, msg: 'El igv no existe' };
 
             if (id) {
                 const productoExiste = await db.query.products.findFirst({
@@ -92,6 +99,7 @@ export const nuevoProductoAction = actionClient
                     ...(codigo && { codigo: codigo.toLowerCase() }),
                     ...(nota !== undefined && { nota: nota?.toLowerCase() }),
                     ...(categoryId && { categoryId }),
+                    ...(igvId && { igv: igvId }),
                     ...(marcaId && { marcaId }),
                     ...(unidadId && { unidadId }),
                     ...(proveedorId && { proveedorId }),
@@ -125,7 +133,70 @@ export const nuevoProductoAction = actionClient
                     }
                 }
 
+                // Actualizar o registrar stockSucursal si se proporcionaron campos de sucursal o stock (solo en actualización cuando existe id)
+                // if (sucursalId || cantidadInicial !== undefined || stockMinimo !== undefined) {
+                //     if (sucursalId) {
+                //         const allStocks = await db
+                //             .select()
+                //             .from(stockSucursal)
+                //             .where(eq(stockSucursal.productoId, id));
+
+                //         const stockInTarget = allStocks.find((s) => s.sucursalId === sucursalId);
+
+                //         if (stockInTarget) {
+                //             const updateData: { cantidad?: number; stockMinimo?: number } = {};
+                //             if (cantidadInicial !== undefined) updateData.cantidad = cantidadInicial;
+                //             if (stockMinimo !== undefined) updateData.stockMinimo = stockMinimo;
+
+                //             if (Object.keys(updateData).length > 0) {
+                //                 await db
+                //                     .update(stockSucursal)
+                //                     .set(updateData)
+                //                     .where(eq(stockSucursal.id, stockInTarget.id));
+                //             }
+                //         } else if (allStocks.length === 1) {
+                //             // Si el producto solo tenía una sucursal previa y se cambió por otra en el formulario
+                //             await db
+                //                 .update(stockSucursal)
+                //                 .set({
+                //                     sucursalId,
+                //                     ...(cantidadInicial !== undefined && { cantidad: cantidadInicial }),
+                //                     ...(stockMinimo !== undefined && { stockMinimo }),
+                //                 })
+                //                 .where(eq(stockSucursal.id, allStocks[0].id));
+                //         } else {
+                //             // Si no existía registro para esta sucursal, se crea uno nuevo
+                //             await db.insert(stockSucursal).values({
+                //                 productoId: id,
+                //                 sucursalId,
+                //                 cantidad: cantidadInicial ?? 0,
+                //                 stockMinimo: stockMinimo ?? 0,
+                //             });
+                //         }
+                //     } else if (cantidadInicial !== undefined || stockMinimo !== undefined) {
+                //         const [existingStock] = await db
+                //             .select()
+                //             .from(stockSucursal)
+                //             .where(eq(stockSucursal.productoId, id))
+                //             .limit(1);
+
+                //         if (existingStock) {
+                //             const updateData: { cantidad?: number; stockMinimo?: number } = {};
+                //             if (cantidadInicial !== undefined) updateData.cantidad = cantidadInicial;
+                //             if (stockMinimo !== undefined) updateData.stockMinimo = stockMinimo;
+
+                //             if (Object.keys(updateData).length > 0) {
+                //                 await db
+                //                     .update(stockSucursal)
+                //                     .set(updateData)
+                //                     .where(eq(stockSucursal.id, existingStock.id));
+                //             }
+                //         }
+                //     }
+                // }
+
                 revalidatePath("/dashboard/productos");
+                revalidatePath("/dashboard/productos/new");
                 revalidatePath("/productos");
                 return { ok: true, msg: "Producto actualizado exitosamente" };
             }
@@ -187,6 +258,7 @@ export const nuevoProductoAction = actionClient
                 marcaId,
                 unidadId,
                 proveedorId,
+                igv: igvExiste.id,
             }).returning();
 
             // Insertar registros en imagen_producto asociados al producto creado
@@ -199,6 +271,16 @@ export const nuevoProductoAction = actionClient
                 );
             }
 
+            // Crear registro en stockSucursal para la sucursal seleccionada
+            if (newProduct?.id && sucursalId) {
+                await db.insert(stockSucursal).values({
+                    productoId: newProduct.id,
+                    sucursalId,
+                    cantidad: cantidadInicial ?? 0,
+                    stockMinimo: stockMinimo ?? 0,
+                });
+            }
+
             revalidatePath("/dashboard/productos");
             revalidatePath("/dashboard/productos/new");
             revalidatePath("/productos");
@@ -208,21 +290,6 @@ export const nuevoProductoAction = actionClient
             return { ok: false, msg: "Error al crear el producto" };
         }
     });
-
-const uploadImage = async (image: File): Promise<string | null> => {
-    try {
-        const buffer = await image.arrayBuffer();
-        const base64Image = Buffer.from(buffer).toString('base64');
-        const mimeType = image.type || 'image/png';
-        const result = await cloudinary.uploader.upload(`data:${mimeType};base64,${base64Image}`, {
-            folder: 'productos',
-        });
-        return result.secure_url;
-    } catch (e) {
-        console.error('Error al subir imagen a Cloudinary:', e);
-        return null;
-    }
-};
 
 const uploadImages = async (files: (File | string)[]): Promise<string[]> => {
     const uploadPromises = files.slice(0, 3).map(async (file) => {
@@ -237,4 +304,19 @@ const uploadImages = async (files: (File | string)[]): Promise<string[]> => {
 
     const results = await Promise.all(uploadPromises);
     return results.filter((url): url is string => Boolean(url));
+};
+
+const uploadImage = async (image: File): Promise<string | null> => {
+    try {
+        const buffer = await image.arrayBuffer();
+        const base64Image = Buffer.from(buffer).toString('base64');
+        const mimeType = image.type || 'image/png';
+        const result = await cloudinary.uploader.upload(`data:${mimeType};base64,${base64Image}`, {
+            folder: 'productos',
+        });
+        return result.secure_url;
+    } catch (e) {
+        console.error('Error al subir imagen a Cloudinary:', e);
+        return null;
+    }
 };

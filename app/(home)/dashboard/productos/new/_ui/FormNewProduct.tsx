@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
     Package,
     Barcode,
@@ -17,6 +17,7 @@ import {
     Boxes,
     ShieldAlert,
     Plus,
+    Minus,
     ArrowLeft,
     ChevronDown,
     Sparkles,
@@ -43,6 +44,7 @@ import ModalProveedor from './ModalProveedor';
 import ModalSucursal from './ModalSucursal';
 import ModalIgv from './ModalIgv';
 import ModalLoadingProduct from './ModalLoadingProduct';
+import { getProductoAction } from '@/server/actions/productos/get-producto-action';
 
 interface Props {
     categorias: Categoria[];
@@ -56,6 +58,13 @@ interface Props {
 
 type ModalType = 'categoria' | 'marca' | 'unidad' | 'igv' | 'sucursal' | 'proveedor' | null;
 
+// Estado para las imágenes del producto (máximo 3)
+interface SelectedImageItem {
+    id: string;
+    file?: File;
+    previewUrl: string;
+}
+
 export default function FormNewProduct({
     categorias = [],
     sucursales = [],
@@ -65,28 +74,70 @@ export default function FormNewProduct({
     marcas = [],
     tipoDocumentos = [],
 }: Props) {
+    const searchParams = useSearchParams();
+    const editMode = searchParams.get('id');
     const router = useRouter();
-
-    // Estados auxiliares de inventario
-    const [stockMinimo, setStockMinimo] = useState('');
-    const [cantidadInicial, setCantidadInicial] = useState('');
-
-    // Estado para las imágenes del producto (máximo 3)
-    interface SelectedImageItem {
-        id: string;
-        file: File;
-        previewUrl: string;
-    }
     const [selectedImages, setSelectedImages] = useState<SelectedImageItem[]>([]);
     const [isDragging, setIsDragging] = useState(false);
+    const [chargetProduct, setChargetProduct] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    console.log(igv);
 
     // Limpieza de memoria de URLs de objetos creados para las vistas previas
     useEffect(() => {
         return () => {
-            selectedImages.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+            selectedImages.forEach((img) => {
+                if (img.file) URL.revokeObjectURL(img.previewUrl);
+            });
         };
     }, [selectedImages]);
+
+    const checkProduct = async () => {
+        if (editMode) {
+            setChargetProduct(true);
+            const { ok, data: product, msg } = await getProductoAction(editMode);
+            setChargetProduct(false);
+            if (!ok) {
+                toast.error(`${msg}`);
+                router.push('/dashboard/productos');
+                return;
+            }
+            if (product) {
+                form.setValue('codigo', product.codigo);
+                form.setValue('name', product.name);
+                form.setValue('descripcion', product.description);
+                form.setValue('precioCompra', product.precioCompra || 0);
+                form.setValue('precioVenta', product.precioVenta);
+                form.setValue('sucursalId', product.sucursalId);
+                form.setValue('nota', product.nota ?? '');
+                form.setValue('categoryId', product.categoryId);
+                form.setValue('marcaId', product.marca?.id!);
+                form.setValue('unidadId', product.unidadId);
+                form.setValue('proveedorId', product.proveedorId!);
+                form.setValue('igvId', product.igv);
+                form.setValue('id', editMode);
+
+                // Agregar las imágenes existentes al formulario y a la previsualización
+                if (product.imagenes && product.imagenes.length > 0) {
+                    const loadedImages: SelectedImageItem[] = product.imagenes.map((img) => ({
+                        id: img.id,
+                        previewUrl: img.url,
+                    }));
+                    setSelectedImages(loadedImages);
+                    const imageUrls = loadedImages.map((img) => img.previewUrl);
+                    form.setValue('images', imageUrls, { shouldValidate: true });
+                    form.setValue('image', imageUrls[0] ?? '', { shouldValidate: true });
+                }
+            }
+        }
+    }
+
+    useEffect(() => {
+        if (!editMode) return;
+        if (editMode) {
+            checkProduct();
+        }
+    }, [editMode]);
 
     const form = useForm<ProductSchema>({
         resolver: zodResolver(productoSchema),
@@ -104,11 +155,15 @@ export default function FormNewProduct({
             marcaId: '',
             unidadId: '',
             proveedorId: '',
-            igv: '',
+            igvId: '',
             sucursalId: '',
+            cantidadInicial: 0,
+            stockMinimo: 0,
         },
         mode: 'onTouched',
     });
+
+
 
     const { execute, status } = useAction(nuevoProductoAction, {
         onSuccess: ({ data }) => {
@@ -132,7 +187,7 @@ export default function FormNewProduct({
 
     // Sincronizar imágenes seleccionadas con react-hook-form
     const syncFormImages = (items: SelectedImageItem[]) => {
-        const files = items.map((it) => it.file);
+        const files = items.map((it) => it.file ?? it.previewUrl);
         form.setValue('images', files, { shouldValidate: true });
         form.setValue('image', files[0] ?? '', { shouldValidate: true });
     };
@@ -181,7 +236,7 @@ export default function FormNewProduct({
             e.stopPropagation();
         }
         const item = selectedImages.find((img) => img.id === idToRemove);
-        if (item) {
+        if (item?.file) {
             URL.revokeObjectURL(item.previewUrl);
         }
         const nextItems = selectedImages.filter((img) => img.id !== idToRemove);
@@ -240,10 +295,17 @@ export default function FormNewProduct({
     };
 
     const handleReset = () => {
-        selectedImages.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+        selectedImages.forEach((img) => {
+            if (img.file) URL.revokeObjectURL(img.previewUrl);
+        });
         setSelectedImages([]);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
+        }
+        if (editMode) {
+            checkProduct();
+            toast.info('Formulario restablecido a los datos originales');
+            return;
         }
         form.reset({
             name: '',
@@ -259,11 +321,11 @@ export default function FormNewProduct({
             marcaId: '',
             unidadId: '',
             proveedorId: '',
-            igv: '',
+            igvId: '',
             sucursalId: '',
+            cantidadInicial: 0,
+            stockMinimo: 0,
         });
-        setStockMinimo('');
-        setCantidadInicial('');
         toast.info('Formulario restablecido');
     };
 
@@ -375,47 +437,52 @@ export default function FormNewProduct({
                         </div>
 
                         {/* Código */}
-                        <div className="sm:col-span-2">
-                            <div className="flex items-center justify-between mb-1.5">
-                                <label htmlFor="codigo" className="block text-xs font-semibold uppercase tracking-wider text-black/70 dark:text-white/70">
-                                    Código / SKU / Barras <span className="text-red-500">*</span>
-                                </label>
-                                <button
-                                    type="button"
-                                    onClick={generarCodigo}
-                                    className="inline-flex items-center gap-1 text-xs font-medium text-[#FC7819] hover:underline cursor-pointer"
-                                >
-                                    <Sparkles className="size-3" />
-                                    <span>Autogenerar</span>
-                                </button>
+                        {editMode
+                            ?
+                            null
+                            :
+                            <div className="sm:col-span-2">
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label htmlFor="codigo" className="block text-xs font-semibold uppercase tracking-wider text-black/70 dark:text-white/70">
+                                        Código / SKU / Barras <span className="text-red-500">*</span>
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={generarCodigo}
+                                        className="inline-flex items-center gap-1 text-xs font-medium text-[#FC7819] hover:underline cursor-pointer"
+                                    >
+                                        <Sparkles className="size-3" />
+                                        <span>Autogenerar</span>
+                                    </button>
+                                </div>
+                                <div className="group relative">
+                                    <Barcode aria-hidden="true" className={iconBaseClass} />
+                                    <Controller
+                                        control={form.control}
+                                        name='codigo'
+                                        render={({ field: { value, onChange } }) => {
+                                            return (
+                                                <input
+                                                    id="codigo"
+                                                    type="text"
+                                                    value={value}
+                                                    onChange={onChange}
+                                                    placeholder="Ej. 7751234567890 o PRD-0042"
+                                                    className={`${inputBaseClass} ${form.formState.errors.codigo ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
+                                                    required
+                                                />
+                                            )
+                                        }}
+                                    />
+                                </div>
+                                {form.formState.errors.codigo && (
+                                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
+                                        <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+                                        {form.formState.errors.codigo.message}
+                                    </p>
+                                )}
                             </div>
-                            <div className="group relative">
-                                <Barcode aria-hidden="true" className={iconBaseClass} />
-                                <Controller
-                                    control={form.control}
-                                    name='codigo'
-                                    render={({ field: { value, onChange } }) => {
-                                        return (
-                                            <input
-                                                id="codigo"
-                                                type="text"
-                                                value={value}
-                                                onChange={onChange}
-                                                placeholder="Ej. 7751234567890 o PRD-0042"
-                                                className={`${inputBaseClass} ${form.formState.errors.codigo ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
-                                                required
-                                            />
-                                        )
-                                    }}
-                                />
-                            </div>
-                            {form.formState.errors.codigo && (
-                                <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
-                                    <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
-                                    {form.formState.errors.codigo.message}
-                                </p>
-                            )}
-                        </div>
+                        }
 
                         {/* Descripción */}
                         <div className="sm:col-span-2">
@@ -501,11 +568,11 @@ export default function FormNewProduct({
 
                                                 {/* Detalles del archivo */}
                                                 <div className="mt-2 flex items-center justify-between text-xs text-black/60 dark:text-white/60 px-1">
-                                                    <span className="truncate max-w-32.5 font-medium text-black dark:text-white" title={imgItem.file.name}>
-                                                        {imgItem.file.name}
+                                                    <span className="truncate max-w-32.5 font-medium text-black dark:text-white" title={imgItem.file?.name ?? 'Imagen guardada'}>
+                                                        {imgItem.file?.name ?? 'Imagen guardada'}
                                                     </span>
                                                     <span className="shrink-0 font-mono text-[11px]">
-                                                        {(imgItem.file.size / (1024 * 1024)).toFixed(2)} MB
+                                                        {imgItem.file ? `${(imgItem.file.size / (1024 * 1024)).toFixed(2)} MB` : 'Guardada'}
                                                     </span>
                                                 </div>
                                             </div>
@@ -840,7 +907,7 @@ export default function FormNewProduct({
                         </div>
 
                         {/* Select Sucursal */}
-                        <div className="sm:col-span-2">
+                        {editMode ? null : <div className="sm:col-span-2">
                             <label htmlFor="sucursal" className="block text-xs font-semibold uppercase tracking-wider text-black/70 dark:text-white/70 mb-1.5">
                                 Sucursal / Almacén Inicial <span className="text-red-500">*</span>
                             </label>
@@ -895,7 +962,7 @@ export default function FormNewProduct({
                                     {form.formState.errors.sucursalId.message}
                                 </p>
                             ) : null}
-                        </div>
+                        </div>}
                     </div>
                 </section>
 
@@ -1008,16 +1075,16 @@ export default function FormNewProduct({
                                     <BadgePercent aria-hidden="true" className={iconBaseClass} />
                                     <Controller
                                         control={form.control}
-                                        name='igv'
+                                        name='igvId'
                                         render={({ field: { value, onChange } }) => {
                                             const noHayIgv = igv.length === 0;
                                             return (
                                                 <select
-                                                    id="igv"
+                                                    id="igvId"
                                                     value={value}
                                                     onChange={onChange}
                                                     disabled={noHayIgv}
-                                                    className={`${selectBaseClass} ${noHayIgv ? 'opacity-50 cursor-not-allowed bg-black/5 dark:bg-white/5' : ''} ${form.formState.errors.igv ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
+                                                    className={`${selectBaseClass} ${noHayIgv ? 'opacity-50 cursor-not-allowed bg-black/5 dark:bg-white/5' : ''} ${form.formState.errors.igvId ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
                                                 >
                                                     <option value="">
                                                         {noHayIgv ? 'No hay IGV disponible' : 'Seleccionar IGV...'}
@@ -1051,10 +1118,10 @@ export default function FormNewProduct({
                                     <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
                                     No hay ningún IGV agregado
                                 </p>
-                            ) : form.formState.errors.igv ? (
+                            ) : form.formState.errors.igvId ? (
                                 <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
                                     <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
-                                    {form.formState.errors.igv.message}
+                                    {form.formState.errors.igvId?.message}
                                 </p>
                             ) : null}
                             <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
@@ -1118,69 +1185,177 @@ export default function FormNewProduct({
                 </section>
 
                 {/* 4. CONTROL DE INVENTARIO Y STOCK */}
-                <section className="rounded-xl border border-black/10 bg-white p-5 sm:p-6 shadow-xs dark:border-white/10 dark:bg-white/2 space-y-6">
-                    <div className="flex items-center gap-2.5 pb-3 border-b border-black/5 dark:border-white/5">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-amber-500/10 text-[#FC7819]">
-                            <Boxes className="size-4" />
-                        </div>
-                        <div>
-                            <h2 className="text-base font-semibold text-gray-900 dark:text-white">
-                                Inventario y Control de Stock
-                            </h2>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                Parámetros de existencias iniciales y umbrales para notificaciones de reabastecimiento.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="grid gap-5 sm:grid-cols-2">
-                        {/* Cantidad Inicial */}
-                        <div>
-                            <label htmlFor="cantidadInicial" className="block text-xs font-semibold uppercase tracking-wider text-black/70 dark:text-white/70 mb-1.5">
-                                Cantidad Inicial (Stock de Apertura)
-                            </label>
-                            <div className="group relative">
-                                <Boxes aria-hidden="true" className={iconBaseClass} />
-                                <input
-                                    id="cantidadInicial"
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    value={cantidadInicial}
-                                    onChange={(e) => setCantidadInicial(e.target.value)}
-                                    placeholder="Ej. 50"
-                                    className={inputBaseClass}
-                                />
+                {editMode
+                    ?
+                    null
+                    :
+                    <section className="rounded-xl border border-black/10 bg-white p-5 sm:p-6 shadow-xs dark:border-white/10 dark:bg-white/2 space-y-6">
+                        <div className="flex items-center gap-2.5 pb-3 border-b border-black/5 dark:border-white/5">
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-amber-500/10 text-[#FC7819]">
+                                <Boxes className="size-4" />
                             </div>
-                            <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-                                Unidades físicas disponibles actualmente en el almacén seleccionado.
-                            </p>
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+                                    Inventario y Control de Stock
+                                </h2>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Parámetros de existencias iniciales y umbrales para notificaciones de reabastecimiento.
+                                </p>
+                            </div>
                         </div>
 
-                        {/* Stock Mínimo */}
-                        <div>
-                            <label htmlFor="stockMinimo" className="block text-xs font-semibold uppercase tracking-wider text-black/70 dark:text-white/70 mb-1.5">
-                                Stock Mínimo (Alerta de Reposición)
-                            </label>
-                            <div className="group relative">
-                                <ShieldAlert aria-hidden="true" className={iconBaseClass} />
-                                <input
-                                    id="stockMinimo"
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    value={stockMinimo}
-                                    onChange={(e) => setStockMinimo(e.target.value)}
-                                    placeholder="Ej. 10"
-                                    className={inputBaseClass}
-                                />
+                        <div className="grid gap-5 sm:grid-cols-2">
+                            {/* Cantidad Inicial */}
+                            <div>
+                                <label htmlFor="cantidadInicial" className="block text-xs font-semibold uppercase tracking-wider text-black/70 dark:text-white/70 mb-1.5">
+                                    Cantidad Inicial (Stock de Apertura) <span className="text-red-500">*</span>
+                                </label>
+                                <div className="group relative">
+                                    <Boxes aria-hidden="true" className={iconBaseClass} />
+                                    <Controller
+                                        control={form.control}
+                                        name="cantidadInicial"
+                                        render={({ field: { value, onChange } }) => (
+                                            <>
+                                                <input
+                                                    id="cantidadInicial"
+                                                    type="number"
+                                                    min="0"
+                                                    step="1"
+                                                    value={value === 0 ? '0' : (value ?? '')}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                                                        onChange(isNaN(val) ? 0 : Math.max(0, val));
+                                                    }}
+                                                    placeholder="0"
+                                                    className={`${inputBaseClass} pr-20 ${form.formState.errors.cantidadInicial ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
+                                                />
+                                                <div className="absolute inset-y-1 right-1.5 flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onChange(Math.max(0, (Number(value) || 0) - 1))}
+                                                        disabled={(Number(value) || 0) <= 0}
+                                                        title="Disminuir en 1"
+                                                        className="flex size-7 items-center justify-center rounded-md border border-black/10 bg-black/5 hover:bg-black/10 text-black/70 hover:text-black dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white/70 dark:hover:text-white transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    >
+                                                        <Minus className="size-3.5" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onChange((Number(value) || 0) + 1)}
+                                                        title="Aumentar en 1"
+                                                        className="flex size-7 items-center justify-center rounded-md border border-black/10 bg-black/5 hover:bg-black/10 text-black/70 hover:text-black dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white/70 dark:hover:text-white transition-colors cursor-pointer"
+                                                    >
+                                                        <Plus className="size-3.5" />
+                                                    </button>
+                                                </div>
+                                            </>
+                                        )}
+                                    />
+                                </div>
+                                {form.formState.errors.cantidadInicial && (
+                                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
+                                        <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+                                        {form.formState.errors.cantidadInicial.message}
+                                    </p>
+                                )}
+                                <div className="mt-2 flex flex-wrap items-center justify-between gap-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                    <span>Unidades físicas disponibles en la sucursal seleccionada.</span>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-[10px] text-gray-400">Rápido:</span>
+                                        {[10, 50, 100].map((add) => (
+                                            <button
+                                                key={add}
+                                                type="button"
+                                                onClick={() => {
+                                                    const current = Number(form.getValues('cantidadInicial')) || 0;
+                                                    form.setValue('cantidadInicial', current + add, { shouldValidate: true });
+                                                }}
+                                                className="rounded border border-black/10 bg-black/2.5 px-1.5 py-0.5 text-[10px] font-medium text-black/70 hover:bg-black/10 hover:text-black dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white transition-colors cursor-pointer"
+                                            >
+                                                +{add}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
-                            <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-                                El sistema alertará cuando las existencias desciendan de este umbral.
-                            </p>
+
+                            {/* Stock Mínimo */}
+                            <div>
+                                <label htmlFor="stockMinimo" className="block text-xs font-semibold uppercase tracking-wider text-black/70 dark:text-white/70 mb-1.5">
+                                    Stock Mínimo (Alerta de Reposición) <span className="text-red-500">*</span>
+                                </label>
+                                <div className="group relative">
+                                    <ShieldAlert aria-hidden="true" className={iconBaseClass} />
+                                    <Controller
+                                        control={form.control}
+                                        name="stockMinimo"
+                                        render={({ field: { value, onChange } }) => (
+                                            <>
+                                                <input
+                                                    id="stockMinimo"
+                                                    type="number"
+                                                    min="0"
+                                                    step="1"
+                                                    value={value === 0 ? '0' : (value ?? '')}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                                                        onChange(isNaN(val) ? 0 : Math.max(0, val));
+                                                    }}
+                                                    placeholder="0"
+                                                    className={`${inputBaseClass} pr-20 ${form.formState.errors.stockMinimo ? 'border-red-500! focus:border-red-500! focus:ring-red-500!' : ''}`}
+                                                />
+                                                <div className="absolute inset-y-1 right-1.5 flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onChange(Math.max(0, (Number(value) || 0) - 1))}
+                                                        disabled={(Number(value) || 0) <= 0}
+                                                        title="Disminuir en 1"
+                                                        className="flex size-7 items-center justify-center rounded-md border border-black/10 bg-black/5 hover:bg-black/10 text-black/70 hover:text-black dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white/70 dark:hover:text-white transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    >
+                                                        <Minus className="size-3.5" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onChange((Number(value) || 0) + 1)}
+                                                        title="Aumentar en 1"
+                                                        className="flex size-7 items-center justify-center rounded-md border border-black/10 bg-black/5 hover:bg-black/10 text-black/70 hover:text-black dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white/70 dark:hover:text-white transition-colors cursor-pointer"
+                                                    >
+                                                        <Plus className="size-3.5" />
+                                                    </button>
+                                                </div>
+                                            </>
+                                        )}
+                                    />
+                                </div>
+                                {form.formState.errors.stockMinimo && (
+                                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
+                                        <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+                                        {form.formState.errors.stockMinimo.message}
+                                    </p>
+                                )}
+                                <div className="mt-2 flex flex-wrap items-center justify-between gap-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                    <span>Alerta automática cuando las existencias desciendan de este umbral.</span>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-[10px] text-gray-400">Sugerido:</span>
+                                        {[5, 10, 20].map((val) => (
+                                            <button
+                                                key={val}
+                                                type="button"
+                                                onClick={() => {
+                                                    form.setValue('stockMinimo', val, { shouldValidate: true });
+                                                }}
+                                                className="rounded border border-black/10 bg-black/2.5 px-1.5 py-0.5 text-[10px] font-medium text-black/70 hover:bg-black/10 hover:text-black dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white transition-colors cursor-pointer"
+                                            >
+                                                {val}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
+                }
 
                 {/* BOTONES DE ACCIÓN INFERIORES */}
                 <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-4 border-t border-black/10 dark:border-white/10">
@@ -1252,7 +1427,7 @@ export default function FormNewProduct({
                 isOpen={activeModal === 'igv'}
                 onClose={() => setActiveModal(null)}
                 onSuccess={(newIgv) => {
-                    form.setValue('igv', newIgv.id, { shouldValidate: true });
+                    form.setValue('igvId', newIgv.id, { shouldValidate: true });
                     setActiveModal(null);
                 }}
             />

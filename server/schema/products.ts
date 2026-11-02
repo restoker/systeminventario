@@ -4,6 +4,7 @@ import { categorias } from "./categorias";
 import { marcas } from "./marca";
 import { unidades } from "./unidad";
 import { proveedor } from "./proveedor";
+import { igv } from "./igv";
 // import { sucursal } from "./sucursal";
 
 export const products = coreTable("products", {
@@ -13,12 +14,13 @@ export const products = coreTable("products", {
     description: text("description").notNull(),
     precioCompra: real("precio_compra").default(0),
     precioVenta: real("precio_venta").notNull(),
-    igv: real("igv").default(0.18),
+    // igv: real("igv").default(0.18),
     // image: text("image"),
     enConsignacion: boolean("en_consignacion").default(false),//si esta en consignación se no se establece el precio de compra
     // el stock por sucursal vive en `stock_sucursal`
     nota: text("nota"),
     // slug: text("slug").notNull(),
+    igv: text('igv').notNull().references(() => igv.id),
     categoryId: text("category_id").notNull().references(() => categorias.id),
     marcaId: text("marca_id").references(() => marcas.id),
     unidadId: text("unidad_id").notNull().references(() => unidades.id),

@@ -119,6 +119,10 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
             from: r.products.id,
             to: r.imagenProducto.productoId,
         }),
+        igv: r.one.igv({
+            from: r.products.igv,
+            to: r.igv.id,
+        }),
     },
     imagenProducto: {
         product: r.one.products({
@@ -307,6 +311,12 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
         movimientoRevertido: r.one.kardex({
             from: r.kardex.movimientoRevertidoId,
             to: r.kardex.id,
+        }),
+    },
+    igv: {
+        products: r.many.products({
+            from: r.igv.id,
+            to: r.products.igv,
         }),
     },
 }));
