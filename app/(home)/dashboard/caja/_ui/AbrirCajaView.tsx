@@ -28,12 +28,18 @@ interface AbrirCajaViewProps {
     sucursal: Sucursal;
     sucursales?: Sucursal[];
     canChangeSucursal?: boolean;
+    returnUrl?: string;
+    moduleName?: string;
+    description?: string;
 }
 
 export default function AbrirCajaView({
     sucursal,
     sucursales = [],
     canChangeSucursal = true,
+    returnUrl = '/dashboard/caja',
+    moduleName = 'Caja',
+    description,
 }: AbrirCajaViewProps) {
     const router = useRouter();
     const [montoInicial, setMontoInicial] = useState<string>('0.00');
@@ -81,18 +87,18 @@ export default function AbrirCajaView({
                         <span>/</span>
                         {canChangeSucursal ? (
                             <>
-                                <Link href="/dashboard/caja" className="hover:underline">Caja</Link>
+                                <Link href={returnUrl} className="hover:underline">{moduleName}</Link>
                                 <span>/</span>
                                 <span className="text-foreground font-medium">{sucursal.nombre}</span>
                             </>
                         ) : (
-                            <span className="text-foreground font-medium">Caja</span>
+                            <span className="text-foreground font-medium">{moduleName}</span>
                         )}
                     </div>
                     <div className="flex items-center gap-3">
                         {canChangeSucursal && (
                             <Link
-                                href="/dashboard/caja"
+                                href={returnUrl}
                                 className={buttonVariants({ variant: "outline", size: "icon-sm" })}
                                 aria-label="Volver a selección de sucursales"
                             >
@@ -119,7 +125,7 @@ export default function AbrirCajaView({
                                     className="h-9 px-3 rounded-md border bg-background text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                                     value={sucursal.id}
                                     onChange={(e) => {
-                                        router.push(`/dashboard/caja?sucursalId=${e.target.value}`);
+                                        router.push(`${returnUrl}?sucursalId=${e.target.value}`);
                                     }}
                                 >
                                     {sucursales.map((s) => (
@@ -131,7 +137,7 @@ export default function AbrirCajaView({
                             </div>
                         )}
                         <Link
-                            href="/dashboard/caja"
+                            href={returnUrl}
                             className={buttonVariants({ variant: "outline", size: "sm" })}
                         >
                             Cambiar Sucursal
@@ -184,7 +190,7 @@ export default function AbrirCajaView({
                         Apertura de Nueva Caja
                     </CardTitle>
                     <CardDescription className="text-xs sm:text-sm">
-                        Actualmente no hay ninguna caja abierta en esta sucursal. Para habilitar las operaciones de venta en el POS, realiza la apertura indicando el saldo o fondo inicial.
+                        {description || 'Actualmente no hay ninguna caja abierta en esta sucursal. Para habilitar las operaciones de venta en el POS, realiza la apertura indicando el saldo o fondo inicial.'}
                     </CardDescription>
                 </CardHeader>
 
@@ -270,7 +276,7 @@ export default function AbrirCajaView({
 
                             {canChangeSucursal ? (
                                 <Link
-                                    href="/dashboard/caja"
+                                    href={returnUrl}
                                     className={buttonVariants({ variant: "ghost" })}
                                 >
                                     Cancelar

@@ -22,9 +22,21 @@ import { Card, CardContent } from '@/components/ui/card';
 
 interface SelectSucursalProps {
     sucursales: Sucursal[];
+    targetUrl?: string;
+    title?: string;
+    subtitle?: string;
+    actionLabel?: string;
+    moduleName?: string;
 }
 
-export default function SelectSucursal({ sucursales }: SelectSucursalProps) {
+export default function SelectSucursal({
+    sucursales,
+    targetUrl = '/dashboard/caja',
+    title = 'Gestión y Control de Caja',
+    subtitle = 'Selecciona una sucursal para consultar el estado de la caja o abrir una nueva jornada.',
+    actionLabel = 'Gestionar Caja',
+    moduleName = 'Caja',
+}: SelectSucursalProps) {
     const [search, setSearch] = useState('');
 
     const filteredSucursales = useMemo(() => {
@@ -48,7 +60,7 @@ export default function SelectSucursal({ sucursales }: SelectSucursalProps) {
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                         <span>Dashboard</span>
                         <span>/</span>
-                        <span className="text-foreground font-medium">Caja</span>
+                        <span className="text-foreground font-medium">{moduleName}</span>
                     </div>
                     <div className="flex items-center gap-2.5">
                         <div className="rounded-lg p-2 bg-primary/10 text-primary">
@@ -56,10 +68,10 @@ export default function SelectSucursal({ sucursales }: SelectSucursalProps) {
                         </div>
                         <div>
                             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                                Gestión y Control de Caja
+                                {title}
                             </h1>
                             <p className="text-sm text-muted-foreground">
-                                Selecciona una sucursal para consultar el estado de la caja o abrir una nueva jornada.
+                                {subtitle}
                             </p>
                         </div>
                     </div>
@@ -140,7 +152,7 @@ export default function SelectSucursal({ sucursales }: SelectSucursalProps) {
                         return (
                             <Link
                                 key={sucursal.id}
-                                href={`/dashboard/caja?sucursalId=${sucursal.id}`}
+                                href={`${targetUrl}?sucursalId=${sucursal.id}`}
                                 className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
                             >
                                 <Card className="h-full border transition-all duration-200 hover:border-primary/50 hover:shadow-md group-hover:-translate-y-0.5">
@@ -191,7 +203,7 @@ export default function SelectSucursal({ sucursales }: SelectSucursalProps) {
                                         </div>
 
                                         <div className="pt-2 flex items-center justify-between text-xs font-medium text-primary group-hover:translate-x-0.5 transition-transform">
-                                            <span>Gestionar Caja</span>
+                                            <span>{actionLabel}</span>
                                             <ChevronRightIcon className="size-4" />
                                         </div>
                                     </CardContent>

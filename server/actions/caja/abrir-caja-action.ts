@@ -31,7 +31,8 @@ export const abrirCajaAction = actionClient
                 fechaCreada: new Date(),
             })
             revalidatePath(`/dashboard/caja`);
-            revalidatePath(`/dashboard/POS`);
+            // revalidatePath(`/dashboard/POS`);
+            revalidatePath(`/dashboard/pos`);
 
             return { ok: true, msg: 'Caja abierta exitosamente' }
         } catch (e) {

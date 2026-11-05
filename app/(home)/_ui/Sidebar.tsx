@@ -153,7 +153,7 @@ export const adminRoutes: Record<string, NavItem[]> = {
         },
         {
             title: 'Punto de venta',
-            url: '/dashboard/ventas',
+            url: '/dashboard/pos',
             icon: ReceiptIcon,
         },
         {
@@ -252,12 +252,12 @@ export const salerRoutes: Record<string, NavItem[]> = {
     Venta: [
         {
             title: 'Nueva Venta',
-            url: '/ventas/nueva',
+            url: '/dashboard/pos',
             icon: ShoppingCartIcon,
         },
         {
             title: 'Mis Ventas',
-            url: '/ventas',
+            url: '/dashboard/ventas',
             icon: ReceiptIcon,
         },
         {
