@@ -2,6 +2,7 @@ import { api } from "@/lib/auth";
 import db from "@/server";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
+import { StoreIcon } from "lucide-react";
 import SidebarAux from "../../_ui/Sidebar";
 import SelectSucursal from "./_ui/SelectSucursal";
 import AbrirCajaView from "./_ui/AbrirCajaView";
@@ -82,29 +83,62 @@ export default async function CajaPage({ searchParams }: PageProps) {
         // SALER PART
         const usuarioSucursal = await db.query.usuarioSucursal.findFirst({
             where: { userId: session.user.id },
+            with: {
+                sucursal: true,
+            }
         });
 
-        if (!usuarioSucursal) return notFound();
-        const caja = await db.query.caja.findFirst({
-            where: { AND: [{ estado: 'abierto' }, { sucursalId: usuarioSucursal.sucursalId }] }
-        });
-        if (!caja) {
+        if (!usuarioSucursal || !usuarioSucursal.sucursal) {
             return (
                 <SidebarAux>
-                    <div className="text-2xl font-bold bg-red-300">Abrir caja</div>
+                    <div className="flex flex-col items-center justify-center p-8 text-center min-h-[50vh]">
+                        <div className="rounded-full bg-amber-500/10 p-3 text-amber-600 mb-3">
+                            <StoreIcon className="size-6" />
+                        </div>
+                        <h2 className="text-xl font-bold text-foreground">Sin Sucursal Asignada</h2>
+                        <p className="text-sm text-muted-foreground mt-1 max-w-md">
+                            Tu usuario de vendedor no tiene una sucursal asignada. Por favor, solicita a un administrador que te asigne a una sucursal para poder operar la caja.
+                        </p>
+                    </div>
                 </SidebarAux>
             );
         }
 
-        const ventas = await db.query.venta.findMany({
-            where: { cajaId: caja.id },
+        const sucursal = usuarioSucursal.sucursal;
+
+        // Consultar si hay una caja abierta para la sucursal del vendedor
+        const caja = await db.query.caja.findFirst({
+            where: {
+                AND: [
+                    { estado: 'abierto' },
+                    { sucursalId: sucursal.id }
+                ]
+            },
+            with: {
+                usuario: true,
+            }
         });
 
+        // Si no hubiera una caja abierta, mostrar pantalla para abrir la caja
+        if (!caja) {
+            return (
+                <SidebarAux>
+                    <AbrirCajaView
+                        sucursal={sucursal}
+                        canChangeSucursal={false}
+                    />
+                </SidebarAux>
+            );
+        }
+
+        // Si hay una caja abierta, llevarle a dicha caja (pantalla solo con título por el momento)
         return (
             <SidebarAux>
-                <div className="p-6">
-                    <h1 className="text-2xl font-bold">Caja Abierta</h1>
-                </div>
+                <CajaAbiertaView
+                    sucursal={sucursal}
+                    caja={caja}
+                    canChangeSucursal={false}
+                />
             </SidebarAux>
         );
     } else {

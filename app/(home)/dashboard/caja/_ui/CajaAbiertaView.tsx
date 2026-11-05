@@ -19,12 +19,14 @@ interface CajaAbiertaViewProps {
     sucursal: Sucursal;
     sucursales?: Sucursal[];
     caja?: any;
+    canChangeSucursal?: boolean;
 }
 
 export default function CajaAbiertaView({
     sucursal,
     sucursales = [],
-    caja
+    caja,
+    canChangeSucursal = true,
 }: CajaAbiertaViewProps) {
     const router = useRouter();
 
@@ -36,18 +38,26 @@ export default function CajaAbiertaView({
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Link href="/dashboard" className="hover:underline">Dashboard</Link>
                         <span>/</span>
-                        <Link href="/dashboard/caja" className="hover:underline">Caja</Link>
-                        <span>/</span>
-                        <span className="text-foreground font-medium">{sucursal.nombre}</span>
+                        {canChangeSucursal ? (
+                            <>
+                                <Link href="/dashboard/caja" className="hover:underline">Caja</Link>
+                                <span>/</span>
+                                <span className="text-foreground font-medium">{sucursal.nombre}</span>
+                            </>
+                        ) : (
+                            <span className="text-foreground font-medium">Caja</span>
+                        )}
                     </div>
                     <div className="flex items-center gap-3">
-                        <Link
-                            href="/dashboard/caja"
-                            className={buttonVariants({ variant: "outline", size: "icon-sm" })}
-                            aria-label="Volver a selección de sucursales"
-                        >
-                            <ArrowLeftIcon className="size-4" />
-                        </Link>
+                        {canChangeSucursal && (
+                            <Link
+                                href="/dashboard/caja"
+                                className={buttonVariants({ variant: "outline", size: "icon-sm" })}
+                                aria-label="Volver a selección de sucursales"
+                            >
+                                <ArrowLeftIcon className="size-4" />
+                            </Link>
+                        )}
                         <div>
                             <div className="flex items-center gap-2.5">
                                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
@@ -65,30 +75,32 @@ export default function CajaAbiertaView({
                     </div>
                 </div>
 
-                {/* Branch Switcher & Actions */}
-                <div className="flex items-center gap-2.5">
-                    {sucursales.length > 1 && (
-                        <select
-                            className="h-9 px-3 rounded-md border bg-background text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                            value={sucursal.id}
-                            onChange={(e) => {
-                                router.push(`/dashboard/caja?sucursalId=${e.target.value}`);
-                            }}
+                {/* Branch Switcher & Actions (Only if canChangeSucursal) */}
+                {canChangeSucursal && (
+                    <div className="flex items-center gap-2.5">
+                        {sucursales.length > 1 && (
+                            <select
+                                className="h-9 px-3 rounded-md border bg-background text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                value={sucursal.id}
+                                onChange={(e) => {
+                                    router.push(`/dashboard/caja?sucursalId=${e.target.value}`);
+                                }}
+                            >
+                                {sucursales.map((s) => (
+                                    <option key={s.id} value={s.id}>
+                                        {s.nombre} ({s.codigo})
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                        <Link
+                            href="/dashboard/caja"
+                            className={buttonVariants({ variant: "outline", size: "sm" })}
                         >
-                            {sucursales.map((s) => (
-                                <option key={s.id} value={s.id}>
-                                    {s.nombre} ({s.codigo})
-                                </option>
-                            ))}
-                        </select>
-                    )}
-                    <Link
-                        href="/dashboard/caja"
-                        className={buttonVariants({ variant: "outline", size: "sm" })}
-                    >
-                        Cambiar Sucursal
-                    </Link>
-                </div>
+                            Cambiar Sucursal
+                        </Link>
+                    </div>
+                )}
             </div>
 
             {/* Sucursal Summary Card */}
