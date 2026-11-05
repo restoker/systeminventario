@@ -114,7 +114,7 @@ export default function FormNewProduct({
                 form.setValue('marcaId', product.marca?.id!);
                 form.setValue('unidadId', product.unidadId);
                 form.setValue('proveedorId', product.proveedorId!);
-                form.setValue('igvId', product.igv);
+                form.setValue('igvId', product.igvId);
                 form.setValue('id', editMode);
 
                 // Agregar las imágenes existentes al formulario y a la previsualización
@@ -170,6 +170,7 @@ export default function FormNewProduct({
             if (data?.ok) {
                 handleReset();
                 toast.success(data.msg);
+                router.push('/dashboard/productos');
             } else if (data?.msg) {
                 toast.error(data.msg);
             }

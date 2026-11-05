@@ -258,7 +258,7 @@ export const nuevoProductoAction = actionClient
                 marcaId,
                 unidadId,
                 proveedorId,
-                igv: igvExiste.id,
+                igvId: igvExiste.id,
             }).returning();
 
             // Insertar registros en imagen_producto asociados al producto creado

@@ -58,6 +58,7 @@ import {
     UserIcon,
     HardDriveIcon,
     SettingsIcon,
+    Wallet,
 } from 'lucide-react';
 
 // Icono personalizado para Consignación (Portapapeles con gráfica de barras)
@@ -133,13 +134,18 @@ export const adminRoutes: Record<string, NavItem[]> = {
             url: '/dashboard/inventario/devoluciones',
             icon: CornerDownLeftIcon,
         },
-        {
-            title: 'Sucursales',
-            url: '/dashboard/sucursales',
-            icon: Building2Icon,
-        },
+        // {
+        //     title: 'Sucursales',
+        //     url: '/dashboard/sucursales',
+        //     icon: Building2Icon,
+        // },
     ],
     Venta: [
+        {
+            title: 'Caja',
+            url: '/dashboard/caja',
+            icon: Wallet,
+        },
         {
             title: 'Productos',
             url: '/dashboard/productos',
@@ -167,7 +173,7 @@ export const adminRoutes: Record<string, NavItem[]> = {
         },
         {
             title: 'Tiendas',
-            url: '/dashboard/pos-team',
+            url: '/dashboard/sucursales',
             icon: Building2Icon,
         },
         {

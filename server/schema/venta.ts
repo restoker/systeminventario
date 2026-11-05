@@ -11,7 +11,7 @@ export const venta = coreTable("ventas", {
     numeroDocumento: text('numeroDocumento'), //en caso sea persona natural, se guarda el DNI, si es empresa, se guarda el RUC
     telefono: text('telefono'),
     direccion: text('direccion'),
-    porConsignacion: boolean("por_consignacion").notNull(),
+    pagado: boolean("pagado").default(false).notNull(),
     recargo: real("recargo").default(0.05),
     subTotal: real("subtotal").notNull(),
     descuento: real("descuento").default(0),

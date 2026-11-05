@@ -120,7 +120,7 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
             to: r.imagenProducto.productoId,
         }),
         igv: r.one.igv({
-            from: r.products.igv,
+            from: r.products.igvId,
             to: r.igv.id,
         }),
     },
@@ -316,7 +316,7 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
     igv: {
         products: r.many.products({
             from: r.igv.id,
-            to: r.products.igv,
+            to: r.products.igvId,
         }),
     },
 }));

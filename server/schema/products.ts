@@ -20,7 +20,7 @@ export const products = coreTable("products", {
     // el stock por sucursal vive en `stock_sucursal`
     nota: text("nota"),
     // slug: text("slug").notNull(),
-    igv: text('igv').notNull().references(() => igv.id),
+    igvId: text('igv_id').notNull().references(() => igv.id),
     categoryId: text("category_id").notNull().references(() => categorias.id),
     marcaId: text("marca_id").references(() => marcas.id),
     unidadId: text("unidad_id").notNull().references(() => unidades.id),

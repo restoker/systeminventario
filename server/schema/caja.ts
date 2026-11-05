@@ -10,7 +10,7 @@ export const caja = coreTable("caja", {
     fechaCierre: timestamp('fecha_cierre', { mode: 'date', withTimezone: true }),
     montoApertura: real('monto_apertura').notNull(),
     montoCierre: real('monto_cierre'),
-    estado: estadoCajaEnum('estado').default('cerrado'),
+    estado: estadoCajaEnum('estado').default('abierto'),
     userId: text('userId').notNull().references(() => users.id),
     sucursalId: text('sucursalId').notNull().references(() => sucursal.id),
     fechaCreada: timestamp('fecha_creada', { mode: 'date', withTimezone: true }),

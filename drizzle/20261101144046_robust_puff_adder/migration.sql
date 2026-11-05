@@ -1,2 +1,0 @@
-ALTER TABLE "proveedor" ADD COLUMN "tipo_documento_id" text NOT NULL;--> statement-breakpoint
-ALTER TABLE "proveedor" ADD CONSTRAINT "proveedor_tipo_documento_id_tipo_documento_id_fkey" FOREIGN KEY ("tipo_documento_id") REFERENCES "tipo_documento"("id");
