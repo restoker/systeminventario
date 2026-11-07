@@ -105,8 +105,8 @@ export const adminRoutes: Record<string, NavItem[]> = {
     ],
     Inventario: [
         {
-            title: 'Ingreso Productos',
-            url: '/inventario/ingreso-productos',
+            title: 'Reabastecer productos',
+            url: '/dashboard/inventario',
             icon: ShoppingCartPlusIcon,
         },
         {

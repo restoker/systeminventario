@@ -149,10 +149,11 @@ export default function SelectSucursal({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredSucursales.map((sucursal) => {
                         const isActivo = sucursal.activo ?? true;
+                        const separator = targetUrl.includes('?') ? '&' : '?';
                         return (
                             <Link
                                 key={sucursal.id}
-                                href={`${targetUrl}?sucursalId=${sucursal.id}`}
+                                href={`${targetUrl}${separator}sucursalId=${sucursal.id}`}
                                 className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
                             >
                                 <Card className="h-full border transition-all duration-200 hover:border-primary/50 hover:shadow-md group-hover:-translate-y-0.5">
