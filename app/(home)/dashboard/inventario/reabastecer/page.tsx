@@ -1,5 +1,6 @@
 import { api } from "@/lib/auth";
 import db from "@/server";
+import { tipoComprobante } from "@/server/schema/tipo-comprobante";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { StoreIcon } from "lucide-react";
@@ -68,7 +69,6 @@ export default async function ReabastecerPage({ searchParams }: PageProps) {
             );
         }
 
-        // Si el vendedor intentó acceder a otra sucursal, forzar su sucursal asignada
         sucursalId = usuarioSucursal.sucursalId;
     }
 
@@ -138,52 +138,62 @@ export default async function ReabastecerPage({ searchParams }: PageProps) {
         );
     }
 
-    // 3. Si hay caja abierta, cargar los datos necesarios para reabastecer
-    const selectedProduct = productoId
-        ? await db.query.products.findFirst({
-            where: { id: productoId },
+    // 3. Cargar tipos de comprobante (sembrar catálogo base si aún está vacío)
+    let allTiposComprobante = await db.query.tipoComprobante.findMany({
+        orderBy: { nombre: 'asc' }
+    });
+
+    // if (allTiposComprobante.length === 0) {
+    //     await db.insert(tipoComprobante).values([
+    //         { nombre: 'Factura', estado: true, serie: 'F001', numero: '00000001', nombreSunat: 'FACTURA ELECTRÓNICA', correlative: 1 },
+    //         { nombre: 'Boleta', estado: true, serie: 'B001', numero: '00000001', nombreSunat: 'BOLETA DE VENTA ELECTRÓNICA', correlative: 1 },
+    //         { nombre: 'Ticket', estado: true, serie: 'T001', numero: '00000001', nombreSunat: 'TICKET DE COMPRA', correlative: 1 },
+    //         { nombre: 'Liquidación de Compra', estado: true, serie: 'E001', numero: '00000001', nombreSunat: 'LIQUIDACIÓN DE COMPRA ELECTRÓNICA', correlative: 1 },
+    //         { nombre: 'Sin Comprobante', estado: true, serie: 'S001', numero: '00000001', nombreSunat: 'SIN COMPROBANTE', correlative: 1 },
+    //     ]);
+    //     allTiposComprobante = await db.query.tipoComprobante.findMany({
+    //         orderBy: { nombre: 'asc' }
+    //     });
+    // }
+
+    const tiposComprobante = allTiposComprobante.filter((t) => t.estado !== false);
+
+    // 4. Cargar datos de producto inicial, existencias de toda la sucursal, proveedores y catálogo
+    const [selectedProduct, stocksSucursal, proveedores, tipoDocumentos, allProducts] = await Promise.all([
+        productoId
+            ? db.query.products.findFirst({
+                where: { id: productoId },
+                with: {
+                    categoria: true,
+                    marca: true,
+                    unidad: true,
+                    proveedor: true,
+                    imagenes: true
+                }
+            })
+            : Promise.resolve(null),
+        db.query.stockSucursal.findMany({
+            where: { sucursalId: selectedSucursal.id }
+        }),
+        db.query.proveedor.findMany({
+            where: { activo: true },
+            orderBy: { nombre: 'asc' }
+        }),
+        db.query.tipoDocumento.findMany({
+            where: { estado: true },
+            orderBy: { nombre: 'asc' }
+        }),
+        db.query.products.findMany({
             with: {
                 categoria: true,
                 marca: true,
                 unidad: true,
                 proveedor: true,
                 imagenes: true
-            }
-        })
-        : null;
-
-    let currentStock = null;
-    if (selectedProduct) {
-        currentStock = await db.query.stockSucursal.findFirst({
-            where: {
-                AND: [
-                    { productoId: selectedProduct.id },
-                    { sucursalId: selectedSucursal.id }
-                ]
-            }
-        });
-    }
-
-    const proveedores = await db.query.proveedor.findMany({
-        where: { activo: true },
-        orderBy: { nombre: 'asc' }
-    });
-
-    const tipoDocumentos = await db.query.tipoDocumento.findMany({
-        where: { estado: true },
-        orderBy: { nombre: 'asc' }
-    });
-
-    const allProducts = await db.query.products.findMany({
-        with: {
-            categoria: true,
-            marca: true,
-            unidad: true,
-            proveedor: true,
-            imagenes: true
-        },
-        orderBy: { name: 'asc' }
-    });
+            },
+            orderBy: { name: 'asc' }
+        }),
+    ]);
 
     return (
         <SidebarAux>
@@ -192,9 +202,10 @@ export default async function ReabastecerPage({ searchParams }: PageProps) {
                 sucursales={sucursales}
                 caja={cajaAbierta}
                 productoInicial={selectedProduct || null}
-                stockActual={currentStock || null}
+                stocksSucursal={stocksSucursal}
                 proveedores={proveedores}
                 tipoDocumentos={tipoDocumentos}
+                tiposComprobante={tiposComprobante}
                 productosDisponibles={allProducts}
                 canChangeSucursal={session.user.role === 'admin'}
             />

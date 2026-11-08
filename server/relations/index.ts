@@ -20,8 +20,11 @@ import { configuracion } from "../schema/configuracion";
 import { caja } from "../schema/caja";
 import { comprobante } from "../schema/comprobante";
 import { usuarioSucursal } from "../schema/usuario-sucursal";
+import { compra } from "../schema/compras";
+import { productosCompras } from "../schema/producto-compra";
+import { egresos } from "../schema/egreso";
 
-export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta, kardex, igv, imagenProducto, tipoDocumento, comision, configuracion, caja, comprobante, usuarioSucursal }, (r) => ({
+export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta, kardex, igv, imagenProducto, tipoDocumento, comision, configuracion, caja, comprobante, usuarioSucursal, compra, productosCompras, egresos }, (r) => ({
     users: {
         // 1:N — sesiones de Better Auth del usuario.
         sessions: r.many.sessions({
@@ -191,6 +194,14 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
             from: r.caja.id,
             to: r.venta.cajaId,
         }),
+        compras: r.many.compra({
+            from: r.caja.id,
+            to: r.compra.cajaId,
+        }),
+        egresos: r.many.egresos({
+            from: r.caja.id,
+            to: r.egresos.cajaId,
+        }),
     },
     // Venta: es el lado "N" de todas sus FKs, por eso todas son `one`.
     venta: {
@@ -317,6 +328,52 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
         products: r.many.products({
             from: r.igv.id,
             to: r.products.igvId,
+        }),
+    },
+    compra: {
+        tipoComprobante: r.one.tipoComprobante({
+            from: r.compra.tipoComprobanteId,
+            to: r.tipoComprobante.id,
+        }),
+        usuario: r.one.users({
+            from: r.compra.userId,
+            to: r.users.id,
+        }),
+        caja: r.one.caja({
+            from: r.compra.cajaId,
+            to: r.caja.id,
+        }),
+        proveedor: r.one.proveedor({
+            from: r.compra.proveedorId,
+            to: r.proveedor.id,
+        }),
+        sucursal: r.one.sucursal({
+            from: r.compra.sucursalId,
+            to: r.sucursal.id,
+        }),
+        productosCompras: r.many.productosCompras({
+            from: r.compra.id,
+            to: r.productosCompras.compraId,
+        }),
+    },
+    productosCompras: {
+        compra: r.one.compra({
+            from: r.productosCompras.compraId,
+            to: r.compra.id,
+        }),
+        producto: r.one.products({
+            from: r.productosCompras.productoId,
+            to: r.products.id,
+        }),
+    },
+    egresos: {
+        caja: r.one.caja({
+            from: r.egresos.cajaId,
+            to: r.caja.id,
+        }),
+        creadoPor: r.one.users({
+            from: r.egresos.createdByUserId,
+            to: r.users.id,
         }),
     },
 }));

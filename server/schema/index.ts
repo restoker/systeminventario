@@ -3,6 +3,9 @@ import { caja } from "./caja";
 import { categorias } from "./categorias";
 import { comprobante } from "./comprobante";
 import { estadoIngresoEnum, ingresos } from "./ingreso";
+import { egresos, estadoEgresoEnum, motivoEgresoEnum, tipoComprobantePagoEnum } from "./egreso";
+import { compra, EstadoCompra } from "./compras";
+import { productosCompras } from "./producto-compra";
 import { marcas } from "./marca";
 import { products } from "./products";
 import { proveedor } from "./proveedor";
@@ -39,7 +42,14 @@ export default {
     comprobante,
     ingresos,
     estadoIngresoEnum,
+    egresos,
+    estadoEgresoEnum,
+    motivoEgresoEnum,
+    tipoComprobantePagoEnum,
     caja,
+    compra,
+    EstadoCompra,
+    productosCompras,
     traslado,
     trasladoDetalle,
     estadoTraslado,
@@ -54,4 +64,5 @@ export default {
     comision,
     configuracion,
     usuarioSucursal,
+
 }
