@@ -13,23 +13,20 @@ import {
     MinusIcon,
     Trash2Icon,
     StoreIcon,
-    MapPinIcon,
     UserIcon,
     ReceiptIcon,
-    CheckCircle2Icon,
-    AlertTriangleIcon,
-    CheckIcon,
     CoinsIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Sucursal } from '@/interfaces';
+import { Sucursal, TipoDocumentoDto, TipoPagoDto } from '@/interfaces';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { cartStore } from '@/store/cartStore';
 import ModalDetalleProducto from './ModalDetalleProducto';
+import ModalCobrarVenta, { TipoComprobantePosItem } from './ModalCobrarVenta';
 
 export interface PosStockItem {
     id: string;
@@ -58,7 +55,7 @@ export interface PosStockItem {
 interface PosTerminalProps {
     sucursal: Sucursal;
     sucursales?: Sucursal[];
-    caja: any;
+    caja?: { id: string; estado?: string | null } | null;
     usuario: {
         id: string;
         name?: string | null;
@@ -66,6 +63,9 @@ interface PosTerminalProps {
         role?: string | null;
     };
     stocks: PosStockItem[];
+    tipoDocumentos?: TipoDocumentoDto[];
+    tiposComprobante?: TipoComprobantePosItem[];
+    tiposPago?: TipoPagoDto[];
     canChangeSucursal?: boolean;
 }
 
@@ -84,9 +84,11 @@ interface CartItem {
 export default function PosTerminal({
     sucursal,
     sucursales = [],
-    caja,
     usuario,
     stocks,
+    tipoDocumentos = [],
+    tiposComprobante = [],
+    tiposPago = [],
     canChangeSucursal = false,
 }: PosTerminalProps) {
     const router = useRouter();
@@ -94,6 +96,7 @@ export default function PosTerminal({
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [cart, setCart] = useState<CartItem[]>([]);
     const [selectedProductModal, setSelectedProductModal] = useState<PosStockItem | null>(null);
+    const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
 
     // Sync with zustand cartStore if needed
     const { lugarId, handleLugarId, handleOrden, clearOrder } = cartStore();
@@ -101,7 +104,6 @@ export default function PosTerminal({
     useEffect(() => {
         if (lugarId !== sucursal.id) {
             handleLugarId(sucursal.id);
-            setCart([]);
             clearOrder();
         }
     }, [sucursal.id, lugarId, handleLugarId, clearOrder]);
@@ -240,10 +242,14 @@ export default function PosTerminal({
             return;
         }
 
-        // Sync order to cartStore
+        // Sync order to cartStore and open Checkout Modal
         handleOrden(cart.map((c) => ({ id: c.productoId, cantidad: c.cantidad })));
+        setIsCheckoutModalOpen(true);
+    };
 
-        toast.success(`Orden preparada para cobro (${totalItems} items - S/ ${total.toFixed(2)})`);
+    const handleConfirmSale = () => {
+        setCart([]);
+        clearOrder();
     };
 
     return (
@@ -307,6 +313,8 @@ export default function PosTerminal({
                             className="h-9 px-3 rounded-md border bg-background text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                             value={sucursal.id}
                             onChange={(e) => {
+                                setCart([]);
+                                clearOrder();
                                 router.push(`/dashboard/pos?sucursalId=${e.target.value}`);
                             }}
                         >
@@ -650,6 +658,22 @@ export default function PosTerminal({
                 }
                 sucursalNombre={sucursal.nombre}
                 isAdmin={usuario.role === 'admin'}
+            />
+
+            {/* Modal de Cobro, Botonera Nominal de Soles y Emisión/Descarga de Ticket */}
+            <ModalCobrarVenta
+                isOpen={isCheckoutModalOpen}
+                onClose={() => setIsCheckoutModalOpen(false)}
+                cart={cart}
+                subtotal={subtotal}
+                igvTotal={igvTotal}
+                total={total}
+                sucursal={sucursal}
+                vendedorNombre={usuario.name || usuario.username || 'Cajero'}
+                tipoDocumentos={tipoDocumentos}
+                tiposComprobante={tiposComprobante}
+                tiposPago={tiposPago}
+                onConfirmSale={handleConfirmSale}
             />
         </div>
     );

@@ -15,7 +15,8 @@
     "db:pull": "drizzle-kit pull",
     "db:studio": "drizzle-kit studio",
     "db:export": "drizzle-kit export",
-    "db:check": "drizzle-kit check"
+    "db:check": "drizzle-kit check",
+    "db:seed": "tsx server/seed/index.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

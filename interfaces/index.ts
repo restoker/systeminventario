@@ -7,3 +7,4 @@ export * from './unidad';
 export * from './productos';
 export * from './usuarios';
 export * from './tipo-documento';
+export * from './tipo-pago';

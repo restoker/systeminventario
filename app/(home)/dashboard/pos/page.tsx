@@ -7,6 +7,7 @@ import SidebarAux from "../../_ui/Sidebar";
 import SelectSucursal from "../caja/_ui/SelectSucursal";
 import AbrirCajaView from "../caja/_ui/AbrirCajaView";
 import PosTerminal, { PosStockItem } from "./_ui/PosTerminal";
+// import { getTiposPago } from "@/server/actions/tipo-pago/tipo-pago-actions";
 
 export const dynamic = 'force-dynamic';
 
@@ -80,23 +81,38 @@ export default async function PosPage({ searchParams }: PageProps) {
             );
         }
 
-        // Si hay una caja abierta, cargar los productos de dicha tienda según stock_sucursal
-        const stocks = await db.query.stockSucursal.findMany({
-            where: { sucursalId: selectedSucursal.id },
-            with: {
-                producto: {
-                    with: {
-                        categoria: true,
-                        marca: true,
-                        unidad: true,
-                        proveedor: true,
-                        igv: true,
-                        imagenes: true,
+        // Si hay una caja abierta, cargar los productos de dicha tienda según stock_sucursal y los catálogos de documento/comprobante/tipoPago
+        const [stocks, tipoDocumentos, allTiposComprobante, tiposPago] = await Promise.all([
+            db.query.stockSucursal.findMany({
+                where: { sucursalId: selectedSucursal.id },
+                with: {
+                    producto: {
+                        with: {
+                            categoria: true,
+                            marca: true,
+                            unidad: true,
+                            proveedor: true,
+                            igv: true,
+                            imagenes: true,
+                        }
                     }
-                }
-            },
-            orderBy: { cantidad: 'desc' }
-        });
+                },
+                orderBy: { cantidad: 'desc' }
+            }),
+            db.query.tipoDocumento.findMany({
+                where: { estado: true },
+                orderBy: { nombre: 'asc' },
+            }),
+            db.query.tipoComprobante.findMany({
+                orderBy: { nombre: 'asc' },
+            }),
+            db.query.tipoPago.findMany({
+                where: { estado: true },
+                orderBy: { nombre: 'asc' },
+            }),
+        ]);
+
+        const tiposComprobante = allTiposComprobante.filter((t) => t.estado !== false);
 
         return (
             <SidebarAux>
@@ -106,6 +122,9 @@ export default async function PosPage({ searchParams }: PageProps) {
                     caja={cajaAbierta}
                     usuario={session.user}
                     stocks={stocks as unknown as PosStockItem[]}
+                    tipoDocumentos={tipoDocumentos}
+                    tiposComprobante={tiposComprobante}
+                    tiposPago={tiposPago}
                     canChangeSucursal={true}
                 />
             </SidebarAux>
@@ -165,23 +184,38 @@ export default async function PosPage({ searchParams }: PageProps) {
             );
         }
 
-        // Si hay una caja abierta, cargar los productos de dicha tienda según stock_sucursal
-        const stocks = await db.query.stockSucursal.findMany({
-            where: { sucursalId: sucursal.id },
-            with: {
-                producto: {
-                    with: {
-                        categoria: true,
-                        marca: true,
-                        unidad: true,
-                        proveedor: true,
-                        igv: true,
-                        imagenes: true,
+        // Si hay una caja abierta, cargar los productos de dicha tienda según stock_sucursal y los catálogos de documento/comprobante/tipoPago
+        const [stocks, tipoDocumentos, allTiposComprobante, tiposPago] = await Promise.all([
+            db.query.stockSucursal.findMany({
+                where: { sucursalId: sucursal.id },
+                with: {
+                    producto: {
+                        with: {
+                            categoria: true,
+                            marca: true,
+                            unidad: true,
+                            proveedor: true,
+                            igv: true,
+                            imagenes: true,
+                        }
                     }
-                }
-            },
-            orderBy: { cantidad: 'desc' }
-        });
+                },
+                orderBy: { cantidad: 'desc' }
+            }),
+            db.query.tipoDocumento.findMany({
+                where: { estado: true },
+                orderBy: { nombre: 'asc' },
+            }),
+            db.query.tipoComprobante.findMany({
+                orderBy: { nombre: 'asc' },
+            }),
+            db.query.tipoPago.findMany({
+                where: { estado: true },
+                orderBy: { nombre: 'asc' },
+            }),
+        ]);
+
+        const tiposComprobante = allTiposComprobante.filter((t) => t.estado !== false);
 
         return (
             <SidebarAux>
@@ -190,6 +224,9 @@ export default async function PosPage({ searchParams }: PageProps) {
                     caja={cajaAbierta}
                     usuario={session.user}
                     stocks={stocks as unknown as PosStockItem[]}
+                    tipoDocumentos={tipoDocumentos}
+                    tiposComprobante={tiposComprobante}
+                    tiposPago={tiposPago}
                     canChangeSucursal={false}
                 />
             </SidebarAux>

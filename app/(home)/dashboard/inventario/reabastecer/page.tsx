@@ -139,17 +139,17 @@ export default async function ReabastecerPage({ searchParams }: PageProps) {
     }
 
     // 3. Cargar tipos de comprobante (sembrar catálogo base si aún está vacío)
-    let allTiposComprobante = await db.query.tipoComprobante.findMany({
+    const allTiposComprobante = await db.query.tipoComprobante.findMany({
         orderBy: { nombre: 'asc' }
     });
-
+    // TODO: Verificar esto, en el backend ya esta el seteo de esto
     // if (allTiposComprobante.length === 0) {
     //     await db.insert(tipoComprobante).values([
-    //         { nombre: 'Factura', estado: true, serie: 'F001', numero: '00000001', nombreSunat: 'FACTURA ELECTRÓNICA', correlative: 1 },
-    //         { nombre: 'Boleta', estado: true, serie: 'B001', numero: '00000001', nombreSunat: 'BOLETA DE VENTA ELECTRÓNICA', correlative: 1 },
-    //         { nombre: 'Ticket', estado: true, serie: 'T001', numero: '00000001', nombreSunat: 'TICKET DE COMPRA', correlative: 1 },
-    //         { nombre: 'Liquidación de Compra', estado: true, serie: 'E001', numero: '00000001', nombreSunat: 'LIQUIDACIÓN DE COMPRA ELECTRÓNICA', correlative: 1 },
-    //         { nombre: 'Sin Comprobante', estado: true, serie: 'S001', numero: '00000001', nombreSunat: 'SIN COMPROBANTE', correlative: 1 },
+    //         { nombre: 'Factura', estado: true, serie: 'F001', numero: '00000000', nombreSunat: 'FACTURA ELECTRÓNICA', correlative: 0 },
+    //         { nombre: 'Boleta', estado: true, serie: 'B001', numero: '00000000', nombreSunat: 'BOLETA DE VENTA ELECTRÓNICA', correlative: 0 },
+    //         { nombre: 'Ticket', estado: true, serie: 'T001', numero: '00000000', nombreSunat: 'TICKET DE COMPRA', correlative: 0 },
+    //         { nombre: 'Liquidación de Compra', estado: true, serie: 'E001', numero: '00000000', nombreSunat: 'LIQUIDACIÓN DE COMPRA ELECTRÓNICA', correlative: 0 },
+    //         { nombre: 'Sin Comprobante', estado: true, serie: 'S001', numero: '00000000', nombreSunat: 'SIN COMPROBANTE', correlative: 0 },
     //     ]);
     //     allTiposComprobante = await db.query.tipoComprobante.findMany({
     //         orderBy: { nombre: 'asc' }
