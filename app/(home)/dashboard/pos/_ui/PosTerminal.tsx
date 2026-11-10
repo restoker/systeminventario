@@ -15,7 +15,8 @@ import {
     StoreIcon,
     UserIcon,
     ReceiptIcon,
-    CoinsIcon
+    CoinsIcon,
+    InfoIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -410,8 +411,19 @@ export default function PosTerminal({
                                 return (
                                     <Card
                                         key={item.id}
-                                        onClick={() => setSelectedProductModal(item)}
-                                        className={`group cursor-pointer select-none border transition-all duration-150 hover:border-primary/60 hover:shadow-sm flex flex-col justify-between overflow-hidden ${isOutOfStock ? 'opacity-55 bg-muted/30' : 'bg-card active:scale-[0.99]'
+                                        // onClick={() => {
+                                        //     if (isOutOfStock) {
+                                        //         toast.error('Producto sin stock en esta sucursal');
+                                        //         return;
+                                        //     }
+                                        //     if (availableLeft <= 0) {
+                                        //         toast.warning('No hay más unidades disponibles de este producto');
+                                        //         return;
+                                        //     }
+                                        //     addToCart(item, 1);
+                                        // }}
+                                        // title={isOutOfStock ? 'Producto sin stock' : 'Haz clic para agregar al carrito'}
+                                        className={`group cursor-pointer select-none border transition-all duration-150 hover:border-primary/60 hover:shadow-sm flex flex-col justify-between overflow-hidden ${isOutOfStock ? 'opacity-55 bg-muted/30 cursor-not-allowed' : 'bg-card active:scale-[0.99]'
                                             }`}
                                     >
                                         <CardContent className="p-3.5 flex flex-col justify-between h-full gap-2.5">
@@ -423,10 +435,10 @@ export default function PosTerminal({
                                                 <Badge
                                                     variant={isOutOfStock ? 'destructive' : isLowStock ? 'secondary' : 'outline'}
                                                     className={`text-[10px] font-mono px-1.5 py-0 ${isOutOfStock
-                                                            ? 'bg-destructive/10 text-destructive border-destructive/20'
-                                                            : isLowStock
-                                                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                                                                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                                        ? 'bg-destructive/10 text-destructive border-destructive/20'
+                                                        : isLowStock
+                                                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                                            : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                                                         }`}
                                                 >
                                                     {isOutOfStock
@@ -467,7 +479,7 @@ export default function PosTerminal({
                                                 </div>
                                             </div>
 
-                                            {/* Bottom: Price + Add Button */}
+                                            {/* Bottom: Price + Actions */}
                                             <div className="pt-2 border-t flex items-center justify-between gap-1">
                                                 <div>
                                                     <span className="text-xs text-muted-foreground font-medium block text-[10px]">
@@ -477,18 +489,36 @@ export default function PosTerminal({
                                                         S/ {Number(prod.precioVenta || 0).toFixed(2)}
                                                     </span>
                                                 </div>
-                                                <Button
-                                                    size="icon-xs"
-                                                    disabled={isOutOfStock || availableLeft <= 0}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        addToCart(item, 1);
-                                                    }}
-                                                    className="size-7 rounded-md cursor-pointer shrink-0"
-                                                    aria-label={`Agregar ${prod.name} al carrito`}
-                                                >
-                                                    <PlusIcon className="size-3.5" />
-                                                </Button>
+                                                <div className="flex items-center gap-1.5">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="icon-xs"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedProductModal(item);
+                                                        }}
+                                                        className="size-7 rounded-md cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted"
+                                                        title="Ver detalles del producto"
+                                                        aria-label={`Ver detalles de ${prod.name}`}
+                                                    >
+                                                        <InfoIcon className="size-3.5" />
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        size="icon-xs"
+                                                        disabled={isOutOfStock || availableLeft <= 0}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            addToCart(item, 1);
+                                                        }}
+                                                        className="size-7 rounded-md cursor-pointer shrink-0"
+                                                        title="Agregar al carrito"
+                                                        aria-label={`Agregar ${prod.name} al carrito`}
+                                                    >
+                                                        <PlusIcon className="size-3.5" />
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </CardContent>
                                     </Card>
