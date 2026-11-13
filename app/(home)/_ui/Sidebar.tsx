@@ -158,7 +158,7 @@ export const adminRoutes: Record<string, NavItem[]> = {
         },
         {
             title: 'Comisiones vendedor',
-            url: '/dashboard/caja',
+            url: '/dashboard/comisiones',
             icon: DollarSignIcon,
         },
         {
@@ -238,11 +238,11 @@ export const salerRoutes: Record<string, NavItem[]> = {
             url: '/dashboard/inventario/stock',
             icon: ArchiveIcon,
         },
-        // {
-        //     title: 'Kardex',
-        //     url: '/dashboard/inventario/kardex',
-        //     icon: NotebookTextIcon,
-        // },
+        {
+            title: 'Kardex',
+            url: '/dashboard/inventario/kardex',
+            icon: NotebookTextIcon,
+        },
         {
             title: 'Devoluciones',
             url: '/dashboard/devoluciones',

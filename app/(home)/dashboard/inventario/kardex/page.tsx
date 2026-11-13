@@ -1,13 +1,18 @@
 import React from 'react';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { and, asc, count, eq, gte, ilike, inArray, lte, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, ilike, inArray, lte, or, sql, type SQL } from 'drizzle-orm';
 import { StoreIcon } from 'lucide-react';
 
 import { api } from '@/lib/auth';
 import db from '@/server';
 import { kardex } from '@/server/schema/kardex';
 import { products } from '@/server/schema/products';
+import { sucursal } from '@/server/schema/sucursal';
+import { unidades } from '@/server/schema/unidad';
+import { categorias } from '@/server/schema/categorias';
+import { imagenProducto } from '@/server/schema/imagen-producto';
+import { users } from '@/server/schema/auth-schema';
 import SidebarAux from '@/app/(home)/_ui/Sidebar';
 import TablaKardex from './_ui/TablaKardex';
 import { KardexItemRow, KardexMetrics, MOTIVOS_LABELS } from '@/types/kardex-schema';
@@ -115,28 +120,14 @@ export default async function KardexPage({ searchParams }: PageProps) {
 
     // Búsqueda por texto (comprobante, detalle, nombre de producto o código)
     if (search) {
-        const matchingProducts = await db
-            .select({ id: products.id })
-            .from(products)
-            .where(
-                or(
-                    ilike(products.name, `%${search}%`),
-                    ilike(products.codigo, `%${search}%`)
-                )
-            )
-            .limit(100);
-
-        const productIds = matchingProducts.map((p) => p.id);
-        const searchOrs: SQL[] = [
-            ilike(kardex.comprobanteRef, `%${search}%`),
-            ilike(kardex.detalleMotivo, `%${search}%`),
-        ];
-
-        if (productIds.length > 0) {
-            searchOrs.push(inArray(kardex.productoId, productIds));
-        }
-
-        conditions.push(or(...searchOrs)!);
+        conditions.push(
+            or(
+                ilike(kardex.comprobanteRef, `%${search}%`),
+                ilike(kardex.detalleMotivo, `%${search}%`),
+                ilike(products.name, `%${search}%`),
+                ilike(products.codigo, `%${search}%`)
+            )!
+        );
     }
 
     const whereSql = conditions.length > 0 ? and(...conditions) : undefined;
@@ -147,9 +138,14 @@ export default async function KardexPage({ searchParams }: PageProps) {
     //    c) Conteo y agregaciones numéricas en SQL (sin cargar filas a memoria)
     //    d) Paginación exacta en el servidor (limit & offset)
     const [sucursales, allProducts, [aggregate], kardexRecords] = await Promise.all([
-        db.query.sucursal.findMany({
-            orderBy: (s, { asc }) => [asc(s.nombre)],
-        }),
+        db
+            .select({
+                id: sucursal.id,
+                nombre: sucursal.nombre,
+                codigo: sucursal.codigo,
+            })
+            .from(sucursal)
+            .orderBy(asc(sucursal.nombre)),
         db
             .select({
                 id: products.id,
@@ -167,26 +163,67 @@ export default async function KardexPage({ searchParams }: PageProps) {
                 valorTotalSalidas: sql<number>`coalesce(sum(case when ${kardex.tipoMovimiento} = 'SALIDA' then ${kardex.costoTotal} else 0 end), 0)::float`,
             })
             .from(kardex)
+            .innerJoin(products, eq(kardex.productoId, products.id))
             .where(whereSql),
-        db.query.kardex.findMany({
-            where: whereSql ? { RAW: whereSql } : undefined,
-            with: {
-                producto: {
-                    with: {
-                        categoria: true,
-                        marca: true,
-                        unidad: true,
-                        imagenes: true,
-                    },
-                },
-                sucursal: true,
-                usuario: true,
-            },
-            orderBy: (k, { desc }) => [desc(k.fecha), desc(k.secuencia)],
-            limit: pageSize,
-            offset,
-        }),
+        db
+            .select({
+                id: kardex.id,
+                secuencia: kardex.secuencia,
+                fecha: kardex.fecha,
+                tipoMovimiento: kardex.tipoMovimiento,
+                motivo: kardex.motivo,
+                detalleMotivo: kardex.detalleMotivo,
+                origenTipo: kardex.origenTipo,
+                comprobanteRef: kardex.comprobanteRef,
+                cantidad: kardex.cantidad,
+                stockAnterior: kardex.stockAnterior,
+                stockActual: kardex.stockActual,
+                costoUnitario: kardex.costoUnitario,
+                costoTotal: kardex.costoTotal,
+                costoPromedio: kardex.costoPromedio,
+                saldoValorizado: kardex.saldoValorizado,
+                productoId: kardex.productoId,
+                productoNombre: products.name,
+                productoCodigo: products.codigo,
+                productoUnidadAbrev: unidades.abreviatura,
+                productoUnidadNombre: unidades.nombre,
+                categoriaNombre: categorias.nombre,
+                sucursalId: kardex.sucursalId,
+                sucursalNombre: sucursal.nombre,
+                sucursalCodigo: sucursal.codigo,
+                usuarioId: kardex.usuarioId,
+                usuarioNombre: users.name,
+            })
+            .from(kardex)
+            .innerJoin(products, eq(kardex.productoId, products.id))
+            .innerJoin(sucursal, eq(kardex.sucursalId, sucursal.id))
+            .leftJoin(unidades, eq(products.unidadId, unidades.id))
+            .leftJoin(categorias, eq(products.categoryId, categorias.id))
+            .leftJoin(users, eq(kardex.usuarioId, users.id))
+            .where(whereSql)
+            .orderBy(desc(kardex.fecha), desc(kardex.secuencia))
+            .limit(pageSize)
+            .offset(offset),
     ]);
+
+    // 3.1 Obtener primera imagen de los productos visibles en la página actual
+    const currentProductIds = Array.from(new Set(kardexRecords.map((r) => r.productoId)));
+    const imageMap = new Map<string, string>();
+    if (currentProductIds.length > 0) {
+        const images = await db
+            .select({
+                productoId: imagenProducto.productoId,
+                url: imagenProducto.url,
+            })
+            .from(imagenProducto)
+            .where(inArray(imagenProducto.productoId, currentProductIds));
+
+        images.forEach((img) => {
+            if (!imageMap.has(img.productoId)) {
+                imageMap.set(img.productoId, img.url);
+            }
+        });
+    }
 
     const totalCount = Number(aggregate?.totalCount) || 0;
     const totalEntradas = Number(aggregate?.totalEntradas) || 0;
@@ -245,16 +282,16 @@ export default async function KardexPage({ searchParams }: PageProps) {
             costoPromedio: costoPromedio,
             saldoValorizado: saldoValorizado,
             productoId: item.productoId,
-            productoNombre: item.producto?.name || 'Producto Desconocido',
-            productoCodigo: item.producto?.codigo || '',
-            productoImagenUrl: item.producto?.imagenes?.[0]?.url || null,
-            productoUnidad: item.producto?.unidad?.abreviatura || item.producto?.unidad?.nombre || 'UND',
-            categoria: item.producto?.categoria?.nombre || 'General',
+            productoNombre: item.productoNombre || 'Producto Desconocido',
+            productoCodigo: item.productoCodigo || '',
+            productoImagenUrl: imageMap.get(item.productoId) || null,
+            productoUnidad: item.productoUnidadAbrev || item.productoUnidadNombre || 'UND',
+            categoria: item.categoriaNombre || 'General',
             sucursalId: item.sucursalId,
-            sucursalNombre: item.sucursal?.nombre || 'Sede',
-            sucursalCodigo: item.sucursal?.codigo || '',
+            sucursalNombre: item.sucursalNombre || 'Sede',
+            sucursalCodigo: item.sucursalCodigo || '',
             usuarioId: item.usuarioId,
-            usuarioNombre: item.usuario?.name || 'Sistema',
+            usuarioNombre: item.usuarioNombre || 'Sistema',
         };
     });
 

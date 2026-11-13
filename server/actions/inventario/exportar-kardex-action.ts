@@ -1,11 +1,14 @@
 'use server';
 
 import { headers } from 'next/headers';
-import { and, eq, gte, ilike, inArray, lte, or, type SQL } from 'drizzle-orm';
+import { and, desc, eq, gte, ilike, lte, or, type SQL } from 'drizzle-orm';
 import { api } from '@/lib/auth';
 import db from '@/server';
 import { kardex } from '@/server/schema/kardex';
 import { products } from '@/server/schema/products';
+import { sucursal } from '@/server/schema/sucursal';
+import { unidades } from '@/server/schema/unidad';
+import { users } from '@/server/schema/auth-schema';
 import { MOTIVOS_LABELS } from '@/types/kardex-schema';
 
 export interface ExportKardexFilterParams {
@@ -78,48 +81,48 @@ export async function exportarKardexCSVAction(params: ExportKardexFilterParams) 
         // 6. Búsqueda por texto
         if (params.search?.trim()) {
             const search = params.search.trim();
-            const matchingProducts = await db
-                .select({ id: products.id })
-                .from(products)
-                .where(
-                    or(
-                        ilike(products.name, `%${search}%`),
-                        ilike(products.codigo, `%${search}%`)
-                    )
-                )
-                .limit(100);
-
-            const productIds = matchingProducts.map((p) => p.id);
-            const searchOrs: SQL[] = [
-                ilike(kardex.comprobanteRef, `%${search}%`),
-                ilike(kardex.detalleMotivo, `%${search}%`),
-            ];
-
-            if (productIds.length > 0) {
-                searchOrs.push(inArray(kardex.productoId, productIds));
-            }
-
-            conditions.push(or(...searchOrs)!);
+            conditions.push(
+                or(
+                    ilike(kardex.comprobanteRef, `%${search}%`),
+                    ilike(kardex.detalleMotivo, `%${search}%`),
+                    ilike(products.name, `%${search}%`),
+                    ilike(products.codigo, `%${search}%`)
+                )!
+            );
         }
 
         const whereSql = conditions.length > 0 ? and(...conditions) : undefined;
 
         // Limitar a máximo 5000 registros para evitar sobrecargar memoria y mantener velocidad
-        const records = await db.query.kardex.findMany({
-            where: whereSql ? { RAW: whereSql } : undefined,
-            with: {
-                producto: {
-                    with: {
-                        unidad: true,
-                        categoria: true,
-                    },
-                },
-                sucursal: true,
-                usuario: true,
-            },
-            orderBy: (k, { desc }) => [desc(k.fecha), desc(k.secuencia)],
-            limit: 5000,
-        });
+        const records = await db
+            .select({
+                secuencia: kardex.secuencia,
+                fecha: kardex.fecha,
+                tipoMovimiento: kardex.tipoMovimiento,
+                motivo: kardex.motivo,
+                detalleMotivo: kardex.detalleMotivo,
+                comprobanteRef: kardex.comprobanteRef,
+                cantidad: kardex.cantidad,
+                stockAnterior: kardex.stockAnterior,
+                stockActual: kardex.stockActual,
+                costoUnitario: kardex.costoUnitario,
+                costoTotal: kardex.costoTotal,
+                saldoValorizado: kardex.saldoValorizado,
+                productoNombre: products.name,
+                productoCodigo: products.codigo,
+                unidadAbrev: unidades.abreviatura,
+                unidadNombre: unidades.nombre,
+                sucursalNombre: sucursal.nombre,
+                usuarioNombre: users.name,
+            })
+            .from(kardex)
+            .innerJoin(products, eq(kardex.productoId, products.id))
+            .innerJoin(sucursal, eq(kardex.sucursalId, sucursal.id))
+            .leftJoin(unidades, eq(products.unidadId, unidades.id))
+            .leftJoin(users, eq(kardex.usuarioId, users.id))
+            .where(whereSql)
+            .orderBy(desc(kardex.fecha), desc(kardex.secuencia))
+            .limit(5000);
 
         if (records.length === 0) {
             return { success: false, error: 'No se encontraron registros de Kardex con los filtros aplicados.' };
@@ -170,10 +173,10 @@ export async function exportarKardexCSVAction(params: ExportKardexFilterParams) 
                 item.secuencia,
                 `"${item.tipoMovimiento}"`,
                 `"${motivoLabel}"`,
-                `"${(item.producto?.name || '').replace(/"/g, '""')}"`,
-                `"${item.producto?.codigo || ''}"`,
-                `"${item.producto?.unidad?.abreviatura || item.producto?.unidad?.nombre || 'UND'}"`,
-                `"${(item.sucursal?.nombre || '').replace(/"/g, '""')}"`,
+                `"${(item.productoNombre || '').replace(/"/g, '""')}"`,
+                `"${item.productoCodigo || ''}"`,
+                `"${item.unidadAbrev || item.unidadNombre || 'UND'}"`,
+                `"${(item.sucursalNombre || '').replace(/"/g, '""')}"`,
                 `"${item.comprobanteRef || '-'}"`,
                 item.cantidad,
                 item.stockAnterior,
@@ -181,7 +184,7 @@ export async function exportarKardexCSVAction(params: ExportKardexFilterParams) 
                 costoUnit.toFixed(2),
                 costoTotal.toFixed(2),
                 saldoValorizado.toFixed(2),
-                `"${(item.usuario?.name || 'Sistema').replace(/"/g, '""')}"`,
+                `"${(item.usuarioNombre || 'Sistema').replace(/"/g, '""')}"`,
                 `"${(item.detalleMotivo || '').replace(/"/g, '""')}"`,
             ];
         });

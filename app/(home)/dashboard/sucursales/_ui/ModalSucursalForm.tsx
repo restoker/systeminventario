@@ -3,7 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Building2Icon, XIcon, CheckIcon, Loader2Icon } from 'lucide-react';
+import {
+    Building2Icon,
+    XIcon,
+    CheckIcon,
+    Loader2Icon,
+    SearchIcon,
+    CheckCircle2Icon,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
@@ -15,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getSucursalAction } from '@/server/actions/sucursal/get-sucursal-action';
+import { getRucBusiness } from '@/server/actions/get-info-dni-ruc';
 import { cn } from 'cn';
 
 interface ModalSucursalFormProps {
@@ -29,6 +37,8 @@ export default function ModalSucursalForm({
     sucursalToEdit
 }: ModalSucursalFormProps) {
     const [loadingCategoria, setLoadingCategoria] = useState<boolean>(false);
+    const [isSearchingRuc, setIsSearchingRuc] = useState<boolean>(false);
+    const [sunatStatus, setSunatStatus] = useState<string | null>(null);
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -41,6 +51,8 @@ export default function ModalSucursalForm({
         handleSubmit,
         reset,
         setValue,
+        getValues,
+        watch,
         formState: { errors }
     } = useForm<NewSurcursalSchema>({
         resolver: zodResolver(newSucursalSchema),
@@ -90,6 +102,9 @@ export default function ModalSucursalForm({
     useEffect(() => {
         if (!isOpen) return;
 
+        setSunatStatus(null);
+        setIsSearchingRuc(false);
+
         if (sucursalToEdit) {
             populateForm(sucursalToEdit);
         } else if (editMode) {
@@ -125,10 +140,51 @@ export default function ModalSucursalForm({
     });
 
     const isPending = status === 'executing';
+    const rucValue = watch('ruc') || '';
+
+    const handleSearchRuc = async () => {
+        const cleanRuc = (getValues('ruc') || '').trim();
+        if (!cleanRuc) {
+            toast.error('Ingresa un número de RUC para consultar');
+            return;
+        }
+        if (!/^\d{11}$/.test(cleanRuc)) {
+            toast.error('El RUC debe tener exactamente 11 dígitos numéricos');
+            return;
+        }
+
+        setIsSearchingRuc(true);
+        setSunatStatus(null);
+
+        try {
+            const res = await getRucBusiness(cleanRuc);
+            if (res?.ok && res.data) {
+                const { name, address, status: sunatEstado } = res.data;
+                setValue('razonSocial', (name || '').trim(), {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                });
+                if (!getValues('direccion')?.trim() && address?.trim()) {
+                    setValue('direccion', address.trim(), {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                    });
+                }
+                setSunatStatus(sunatEstado || 'OK');
+                toast.success('Razón social obtenida exitosamente de SUNAT');
+            } else {
+                toast.error(res?.msg || 'No se encontró información para el RUC ingresado');
+            }
+        } catch {
+            toast.error('Error al consultar el RUC en SUNAT');
+        } finally {
+            setIsSearchingRuc(false);
+        }
+    };
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && !isPending) {
+            if (e.key === 'Escape' && !isPending && !isSearchingRuc) {
                 onClose();
             }
         };
@@ -136,7 +192,7 @@ export default function ModalSucursalForm({
             window.addEventListener('keydown', handleKeyDown);
             return () => window.removeEventListener('keydown', handleKeyDown);
         }
-    }, [isOpen, onClose, isPending]);
+    }, [isOpen, onClose, isPending, isSearchingRuc]);
 
     if (!isOpen) return null;
 
@@ -149,7 +205,8 @@ export default function ModalSucursalForm({
     };
 
     const handleClose = () => {
-        if (isPending) return;
+        if (isPending || isSearchingRuc) return;
+        setSunatStatus(null);
         reset();
         onClose();
     };
@@ -295,21 +352,68 @@ export default function ModalSucursalForm({
                         </div>
 
                         {/* RUC */}
-                        <div className='space-y-1.5'>
-                            <Label htmlFor='ruc' className='text-xs font-medium text-foreground'>
-                                RUC (11 dígitos)
-                            </Label>
-                            <Input
-                                id='ruc'
-                                placeholder='20601234567'
-                                maxLength={11}
-                                {...register('ruc')}
-                                disabled={isPending}
-                            />
+                        <div className='space-y-1.5 sm:col-span-2'>
+                            <div className='flex items-center justify-between gap-2'>
+                                <Label htmlFor='ruc' className='text-xs font-medium text-foreground'>
+                                    RUC (11 dígitos)
+                                </Label>
+                                {sunatStatus && (
+                                    <span className='inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400'>
+                                        <CheckCircle2Icon className='size-3' />
+                                        SUNAT: {sunatStatus}
+                                    </span>
+                                )}
+                            </div>
+                            <div className='flex gap-2'>
+                                <Input
+                                    id='ruc'
+                                    type='text'
+                                    inputMode='numeric'
+                                    placeholder='20601234567'
+                                    maxLength={11}
+                                    {...register('ruc', {
+                                        onChange: (e) => {
+                                            e.target.value = e.target.value.replace(/\D/g, '');
+                                            if (sunatStatus) setSunatStatus(null);
+                                        },
+                                    })}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            if (!isPending && !isSearchingRuc && rucValue.trim().length === 11) {
+                                                handleSearchRuc();
+                                            }
+                                        }
+                                    }}
+                                    disabled={isPending || isSearchingRuc}
+                                    className='font-mono flex-1'
+                                />
+                                <Button
+                                    type='button'
+                                    variant='secondary'
+                                    size='default'
+                                    onClick={handleSearchRuc}
+                                    disabled={isPending || isSearchingRuc || !rucValue.trim()}
+                                    className='cursor-pointer gap-1.5 text-xs font-medium shrink-0 px-3'
+                                    title='Buscar razón social en SUNAT por RUC'
+                                >
+                                    {isSearchingRuc ? (
+                                        <>
+                                            <Loader2Icon className='size-3.5 animate-spin' />
+                                            <span>Buscando...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <SearchIcon className='size-3.5' />
+                                            <span>Buscar RUC</span>
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
                         </div>
 
                         {/* Razón Social */}
-                        <div className='space-y-1.5'>
+                        <div className='space-y-1.5 sm:col-span-2'>
                             <Label htmlFor='razonSocial' className='text-xs font-medium text-foreground'>
                                 Razón Social
                             </Label>
@@ -317,7 +421,7 @@ export default function ModalSucursalForm({
                                 id='razonSocial'
                                 placeholder='Empresa Comercial S.A.C.'
                                 {...register('razonSocial')}
-                                disabled={isPending}
+                                disabled={isPending || isSearchingRuc}
                             />
                         </div>
 
