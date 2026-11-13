@@ -121,7 +121,7 @@ export const adminRoutes: Record<string, NavItem[]> = {
         },
         {
             title: 'Consignación',
-            url: '/dashboard/inventario/consignacion',
+            url: '/dashboard/consignacion',
             icon: ClipboardChartIcon,
         },
         {
@@ -131,7 +131,7 @@ export const adminRoutes: Record<string, NavItem[]> = {
         },
         {
             title: 'Devoluciones',
-            url: '/dashboard/inventario/devoluciones',
+            url: '/dashboard/devoluciones',
             icon: CornerDownLeftIcon,
         },
         // {
@@ -238,14 +238,14 @@ export const salerRoutes: Record<string, NavItem[]> = {
             url: '/dashboard/inventario/stock',
             icon: ArchiveIcon,
         },
-        {
-            title: 'Kardex',
-            url: '/dashboard/inventario/kardex',
-            icon: NotebookTextIcon,
-        },
+        // {
+        //     title: 'Kardex',
+        //     url: '/dashboard/inventario/kardex',
+        //     icon: NotebookTextIcon,
+        // },
         {
             title: 'Devoluciones',
-            url: '/dashboard/inventario/devoluciones',
+            url: '/dashboard/devoluciones',
             icon: CornerDownLeftIcon,
         },
     ],

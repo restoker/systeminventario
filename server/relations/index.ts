@@ -11,6 +11,8 @@ import { tipoPago } from "../schema/tipo-pago";
 import { traslado, trasladoDetalle } from "../schema/traslado";
 import { stockSucursal } from "../schema/stock-sucursal";
 import { venta } from "../schema/venta";
+import { productoVenta } from "../schema/producto-venta";
+import { devolucion } from "../schema/devolucion";
 import { kardex } from "../schema/kardex";
 import { igv } from "../schema/igv";
 import { imagenProducto } from "../schema/imagen-producto";
@@ -24,7 +26,7 @@ import { compra } from "../schema/compras";
 import { productosCompras } from "../schema/producto-compra";
 import { egresos } from "../schema/egreso";
 
-export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta, kardex, igv, imagenProducto, tipoDocumento, comision, configuracion, caja, comprobante, usuarioSucursal, compra, productosCompras, egresos }, (r) => ({
+export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta, productoVenta, devolucion, kardex, igv, imagenProducto, tipoDocumento, comision, configuracion, caja, comprobante, usuarioSucursal, compra, productosCompras, egresos }, (r) => ({
     users: {
         // 1:N — sesiones de Better Auth del usuario.
         sessions: r.many.sessions({
@@ -118,6 +120,14 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
             from: r.products.id,
             to: r.kardex.productoId,
         }),
+        ventas: r.many.productoVenta({
+            from: r.products.id,
+            to: r.productoVenta.productId,
+        }),
+        devoluciones: r.many.devolucion({
+            from: r.products.id,
+            to: r.devolucion.productoId,
+        }),
         imagenes: r.many.imagenProducto({
             from: r.products.id,
             to: r.imagenProducto.productoId,
@@ -179,6 +189,10 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
             from: r.sucursal.id,
             to: r.venta.sucursalId,
         }),
+        devoluciones: r.many.devolucion({
+            from: r.sucursal.id,
+            to: r.devolucion.sucursalId,
+        }),
     },
     // Caja: pertenece a UN usuario y a UNA sucursal; agrupa muchas ventas.
     caja: {
@@ -225,6 +239,38 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
         comprobante: r.one.comprobante({
             from: r.venta.comprobanteId,
             to: r.comprobante.id,
+        }),
+        productos: r.many.productoVenta({
+            from: r.venta.id,
+            to: r.productoVenta.ventaId,
+        }),
+        devoluciones: r.many.devolucion({
+            from: r.venta.id,
+            to: r.devolucion.ventaId,
+        }),
+    },
+    devolucion: {
+        sucursal: r.one.sucursal({
+            from: r.devolucion.sucursalId,
+            to: r.sucursal.id,
+        }),
+        venta: r.one.venta({
+            from: r.devolucion.ventaId,
+            to: r.venta.id,
+        }),
+        producto: r.one.products({
+            from: r.devolucion.productoId,
+            to: r.products.id,
+        }),
+    },
+    productoVenta: {
+        venta: r.one.venta({
+            from: r.productoVenta.ventaId,
+            to: r.venta.id,
+        }),
+        producto: r.one.products({
+            from: r.productoVenta.productId,
+            to: r.products.id,
         }),
     },
     // Comprobante: tipo, tipo de documento y usuario que lo creó.

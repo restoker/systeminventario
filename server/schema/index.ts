@@ -17,6 +17,8 @@ import { unidades } from "./unidad";
 import { estadoTraslado, traslado, trasladoDetalle } from "./traslado";
 import { stockSucursal } from "./stock-sucursal";
 import { venta } from "./venta";
+import { productoVenta } from "./producto-venta";
+import { devolucion } from "./devolucion";
 import { kardex, motivoKardexEnum, origenKardexEnum, tipoMovimientoKardexEnum } from "./kardex";
 import { igv } from "./igv";
 import { imagenProducto } from "./imagen-producto";
@@ -55,6 +57,8 @@ export default {
     estadoTraslado,
     stockSucursal,
     venta,
+    productoVenta,
+    devolucion,
     kardex,
     tipoMovimientoKardexEnum,
     motivoKardexEnum,
