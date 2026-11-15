@@ -20,6 +20,8 @@ export default async function InventarioPage({ searchParams }: PageProps) {
     const session = await api.getSession({ headers: await headers() });
     if (!session?.user) return redirect("/login");
 
+    // if (session.user.role === 'saler') return redirect("/dashboard/pos");
+
     const params = await searchParams;
     const initialSucursalId = params?.sucursalId || 'all';
 

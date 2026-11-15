@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { Fragment } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,7 +13,7 @@ import {
     BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
     Sidebar,
     SidebarContent,
@@ -28,8 +28,11 @@ import {
     SidebarTrigger
 } from '@/components/ui/sidebar';
 
-import LanguageDropdown from '@/components/shadcn-studio/blocks/dropdown-language';
-import ProfileDropdown from '@/components/shadcn-studio/blocks/dropdown-profile';
+import ProfileDropdown, {
+    getUserInitials,
+    ROLE_LABELS,
+    type ProfileSessionUser,
+} from '@/components/shadcn-studio/blocks/dropdown-profile';
 import { authClient } from '@/lib/auth-client';
 
 import FacebookIcon from '@/assets/svg/facebook-icon';
@@ -54,7 +57,7 @@ import {
     BookmarkIcon,
     ScaleIcon,
     UsersIcon,
-    LanguagesIcon,
+    ChevronDownIcon,
     UserIcon,
     HardDriveIcon,
     SettingsIcon,
@@ -126,7 +129,7 @@ export const adminRoutes: Record<string, NavItem[]> = {
         },
         {
             title: 'Pago a proveedores',
-            url: '/dashboard/inventario/pago-proveedores',
+            url: '/dashboard/proveedores/transacciones',
             icon: ArrowLeftRightIcon,
         },
         {
@@ -285,16 +288,146 @@ export const routesByRole: Record<UserRole, Record<string, NavItem[]>> = {
     saler: salerRoutes,
 };
 
+interface BreadcrumbSegment {
+    label: string;
+    href?: string;
+}
+
+const GROUP_DISPLAY_LABELS: Record<string, string> = {
+    Catalogo: 'Catálogo',
+};
+
+const SEGMENT_LABELS: Record<string, string> = {
+    inventario: 'Inventario',
+    stock: 'Stock',
+    kardex: 'Kardex',
+    reabastecer: 'Reabastecer',
+    consignacion: 'Consignación',
+    proveedores: 'Proveedores',
+    transacciones: 'Pago a proveedores',
+    devoluciones: 'Devoluciones',
+    caja: 'Caja',
+    productos: 'Productos',
+    new: 'Nuevo producto',
+    pos: 'Punto de venta',
+    ventas: 'Ventas',
+    vendedores: 'Vendedores',
+    sucursales: 'Tiendas',
+    configuracion: 'Configuración',
+    usuarios: 'Usuarios',
+};
+
+const EXTRA_ROUTE_TRAILS: Record<string, BreadcrumbSegment[]> = {
+    '/dashboard/inventario/reabastecer': [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Inventario', href: '/dashboard/inventario' },
+        { label: 'Reabastecer' },
+    ],
+    '/dashboard/productos/new': [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Productos', href: '/dashboard/productos' },
+        { label: 'Nuevo producto' },
+    ],
+    '/dashboard/proveedores/transacciones': [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Proveedores', href: '/dashboard/proveedores' },
+        { label: 'Pago a proveedores' },
+    ],
+};
+
+function formatSegmentLabel(segment: string): string {
+    const known = SEGMENT_LABELS[segment.toLowerCase()];
+    if (known) return known;
+    const words = segment.replace(/[-_]+/g, ' ').trim();
+    return words ? words.charAt(0).toUpperCase() + words.slice(1) : '';
+}
+
+/** Build ordered, clickable breadcrumb segments from the current route and role menu. */
+function resolveBreadcrumbs(
+    pathname: string,
+    routes: Record<string, NavItem[]>
+): { crumbs: BreadcrumbSegment[]; pageTitle: string } {
+    const normalized = pathname !== '/' ? pathname.replace(/\/+$/, '') : '/';
+
+    if (normalized === '/dashboard' || normalized === '/') {
+        return { crumbs: [{ label: 'Dashboard' }], pageTitle: 'Dashboard' };
+    }
+
+    const extraTrail = EXTRA_ROUTE_TRAILS[normalized];
+    if (extraTrail) {
+        return {
+            crumbs: extraTrail,
+            pageTitle: extraTrail[extraTrail.length - 1].label,
+        };
+    }
+
+    for (const [groupTitle, items] of Object.entries(routes)) {
+        const match = items.find((item) => item.url === normalized);
+        if (!match) continue;
+
+        if (groupTitle === 'Principal') {
+            return { crumbs: [{ label: match.title }], pageTitle: match.title };
+        }
+
+        const groupLabel = GROUP_DISPLAY_LABELS[groupTitle] ?? groupTitle;
+        const groupHref =
+            groupTitle === 'Inventario' && normalized !== '/dashboard/inventario'
+                ? '/dashboard/inventario'
+                : undefined;
+
+        return {
+            crumbs: [
+                { label: 'Dashboard', href: '/dashboard' },
+                { label: groupLabel, href: groupHref },
+                { label: match.title },
+            ],
+            pageTitle: match.title,
+        };
+    }
+
+    const segments = normalized.replace(/^\/dashboard\/?/, '').split('/').filter(Boolean);
+    if (segments.length === 0) {
+        return { crumbs: [{ label: 'Dashboard' }], pageTitle: 'Dashboard' };
+    }
+
+    const trail: BreadcrumbSegment[] = [{ label: 'Dashboard', href: '/dashboard' }];
+    segments.forEach((segment, idx) => {
+        const label = formatSegmentLabel(segment);
+        if (!label) return;
+        const isLast = idx === segments.length - 1;
+        const knownParentHref =
+            !isLast && (segment === 'inventario' || segment === 'productos' || segment === 'proveedores')
+                ? `/dashboard/${segment}`
+                : undefined;
+        trail.push({ label, href: knownParentHref });
+    });
+
+    return {
+        crumbs: trail,
+        pageTitle: trail[trail.length - 1]?.label ?? 'Dashboard',
+    };
+}
+
 interface SidebarAuxProps {
     children: React.ReactNode;
     role?: UserRole;
 }
 
 const SidebarAux = ({ children, role }: SidebarAuxProps) => {
-    const pathname = usePathname();
-    const { data: session } = authClient.useSession();
-    const userRole: UserRole = role ?? (session?.user as { role?: UserRole } | undefined)?.role ?? 'admin';
+    const pathname = usePathname() || '/dashboard';
+    const normalizedPath = pathname !== '/' ? pathname.replace(/\/+$/, '') : '/';
+    const { data: session, isPending: isSessionPending } = authClient.useSession();
+    const sessionUser = session?.user as ProfileSessionUser | undefined;
+    const userRole: UserRole =
+        role ?? (sessionUser?.role === 'admin' || sessionUser?.role === 'saler' ? sessionUser.role : 'admin');
     const currentRoutes = routesByRole[userRole] ?? adminRoutes;
+    const { crumbs, pageTitle } = resolveBreadcrumbs(normalizedPath, currentRoutes);
+
+    const showSessionSkeleton = isSessionPending && !sessionUser;
+    const displayName = sessionUser?.name?.trim() || 'Usuario';
+    const userImage = sessionUser?.image?.trim() || undefined;
+    const initials = getUserInitials(sessionUser?.name, sessionUser?.email);
+    const roleLabel = ROLE_LABELS[userRole].full;
 
     return (
         <div className='flex min-h-dvh w-full'>
@@ -310,7 +443,7 @@ const SidebarAux = ({ children, role }: SidebarAuxProps) => {
                                     <SidebarMenu>
                                         {items.map((item) => {
                                             const IconComponent = item.icon;
-                                            const isActive = pathname === item.url;
+                                            const isActive = normalizedPath === item.url;
                                             return (
                                                 <SidebarMenuItem key={item.title}>
                                                     <SidebarMenuButton
@@ -334,47 +467,107 @@ const SidebarAux = ({ children, role }: SidebarAuxProps) => {
                         ))}
                     </SidebarContent>
                 </Sidebar>
-                <div className='flex flex-1 flex-col'>
-                    <header className='bg-card sticky top-0 z-50 border-b'>
-                        <div className='mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-2 sm:px-6'>
-                            <div className='flex items-center gap-4'>
-                                <SidebarTrigger className='[&_svg]:size-5!' />
-                                <Separator orientation='vertical' className='hidden h-4! data-vertical:self-center sm:block' />
-                                <Breadcrumb className='hidden sm:block'>
-                                    <BreadcrumbList>
-                                        <BreadcrumbItem>
-                                            <BreadcrumbLink href='#'>Home</BreadcrumbLink>
-                                        </BreadcrumbItem>
-                                        <BreadcrumbSeparator />
-                                        <BreadcrumbItem>
-                                            <BreadcrumbLink href='#'>Dashboard</BreadcrumbLink>
-                                        </BreadcrumbItem>
-                                        <BreadcrumbSeparator />
-                                        <BreadcrumbItem>
-                                            <BreadcrumbPage>Free</BreadcrumbPage>
-                                        </BreadcrumbItem>
-                                    </BreadcrumbList>
-                                </Breadcrumb>
-                            </div>
-                            <div className='flex items-center gap-1.5'>
-                                <LanguageDropdown
-                                    trigger={
-                                        <Button variant='ghost' size='icon-lg'>
-                                            <LanguagesIcon />
-                                        </Button>
-                                    }
+                <div className='flex min-w-0 flex-1 flex-col'>
+                    <header data-ui='' className='sticky top-0 z-40 border-b border-border/70 bg-sidebar'>
+                        <div className='mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6'>
+                            <div className='flex min-w-0 items-center gap-3'>
+                                <SidebarTrigger
+                                    aria-label='Alternar menú lateral'
+                                    title='Alternar menú lateral (⌘B)'
+                                    className='size-9 shrink-0 text-muted-foreground hover:text-foreground sm:size-8 [&_svg]:size-4!'
                                 />
+                                <div className='min-w-0'>
+                                    <span className='block truncate text-sm font-semibold tracking-tight text-foreground sm:hidden'>
+                                        {pageTitle}
+                                    </span>
+                                    <Breadcrumb className='hidden sm:block'>
+                                        <BreadcrumbList className='flex-nowrap whitespace-nowrap'>
+                                            {crumbs.map((crumb, index) => {
+                                                const isLast = index === crumbs.length - 1;
+                                                const isIntermediate = index > 0 && !isLast;
+                                                return (
+                                                    <Fragment key={`${crumb.label}-${index}`}>
+                                                        {index > 0 && (
+                                                            <BreadcrumbSeparator
+                                                                className={isIntermediate ? 'hidden lg:block' : undefined}
+                                                            />
+                                                        )}
+                                                        <BreadcrumbItem
+                                                            className={isIntermediate ? 'hidden lg:inline-flex' : undefined}
+                                                        >
+                                                            {isLast ? (
+                                                                <BreadcrumbPage className='max-w-44 truncate font-medium text-foreground lg:max-w-64'>
+                                                                    {crumb.label}
+                                                                </BreadcrumbPage>
+                                                            ) : crumb.href ? (
+                                                                <BreadcrumbLink render={<Link href={crumb.href} />}>
+                                                                    {crumb.label}
+                                                                </BreadcrumbLink>
+                                                            ) : (
+                                                                <span className='text-muted-foreground'>
+                                                                    {crumb.label}
+                                                                </span>
+                                                            )}
+                                                        </BreadcrumbItem>
+                                                    </Fragment>
+                                                );
+                                            })}
+                                        </BreadcrumbList>
+                                    </Breadcrumb>
+                                </div>
+                            </div>
+                            <div className='flex shrink-0 items-center gap-2'>
+                                {normalizedPath !== '/dashboard/pos' && (
+                                    <Link
+                                        href='/dashboard/pos'
+                                        className='hidden h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:inline-flex'
+                                    >
+                                        <ReceiptIcon className='size-3.5 text-amber-600 dark:text-amber-500' />
+                                        <span>{userRole === 'saler' ? 'Nueva venta' : 'Punto de venta'}</span>
+                                    </Link>
+                                )}
                                 <ProfileDropdown
+                                    user={sessionUser}
+                                    role={userRole}
                                     trigger={
-                                        <Button variant='ghost' size='icon-lg'>
-                                            <Avatar className='size-[inherit] rounded-[inherit] after:rounded-[inherit]'>
-                                                <AvatarImage
-                                                    src='https://cdn.shadcnstudio.com/ss-assets/avatar/avatar-1.png'
-                                                    className='rounded-[inherit]'
-                                                />
-                                                <AvatarFallback className='rounded-[inherit]'>JD</AvatarFallback>
-                                            </Avatar>
-                                        </Button>
+                                        showSessionSkeleton ? (
+                                            <Button
+                                                variant='ghost'
+                                                disabled
+                                                aria-label='Cargando cuenta'
+                                                className='h-10 gap-2.5 rounded-md px-1.5 sm:pr-2'
+                                            >
+                                                <Skeleton className='size-7 rounded-full' />
+                                                <span className='hidden flex-col gap-1 sm:flex'>
+                                                    <Skeleton className='h-3 w-20' />
+                                                    <Skeleton className='h-2.5 w-14' />
+                                                </span>
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                variant='ghost'
+                                                aria-label={`Cuenta de ${displayName}`}
+                                                className='group/profile h-10 gap-2.5 rounded-md px-1.5 hover:bg-muted aria-expanded:bg-muted sm:pr-2'
+                                            >
+                                                <Avatar size='sm' className='size-7 shrink-0 after:border-foreground/10'>
+                                                    {userImage ? (
+                                                        <AvatarImage src={userImage} alt={displayName} />
+                                                    ) : null}
+                                                    <AvatarFallback className='bg-foreground text-background text-xs font-semibold'>
+                                                        {initials}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <span className='hidden min-w-0 flex-col items-start text-left sm:flex'>
+                                                    <span className='max-w-36 truncate text-[13px] font-semibold leading-tight text-foreground'>
+                                                        {displayName}
+                                                    </span>
+                                                    <span className='max-w-36 truncate text-xs leading-tight text-muted-foreground'>
+                                                        {roleLabel}
+                                                    </span>
+                                                </span>
+                                                <ChevronDownIcon className='hidden size-3.5 shrink-0 text-muted-foreground transition-transform duration-150 group-aria-expanded/profile:rotate-180 sm:block' />
+                                            </Button>
+                                        )
                                     }
                                 />
                             </div>

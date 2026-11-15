@@ -36,6 +36,7 @@ export const abrirCajaAction = actionClient
             revalidatePath(`/dashboard/inventario/reabastecer`);
             revalidatePath(`/dashboard/inventario`);
             revalidatePath(`/dashboard/devoluciones`);
+            revalidatePath(`/dashboard/proveedores/transacciones`);
 
             return { ok: true, msg: 'Caja abierta exitosamente' }
         } catch (e) {
