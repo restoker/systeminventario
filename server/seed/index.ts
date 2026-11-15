@@ -1,10 +1,12 @@
 import { seedTiposPago, SeedOptions } from "./tipo-pago-seed";
 import { seedTiposComprobante } from "./tipo-comprobante-seed";
 import { seedUsuarios } from "./usuarios-seed";
+import { seedIgv } from "./igv-seed";
 
 export * from "./tipo-pago-seed";
 export * from "./tipo-comprobante-seed";
 export * from "./usuarios-seed";
+export * from "./igv-seed";
 
 export type { SeedOptions };
 
@@ -18,6 +20,7 @@ export type { SeedOptions };
  * 1. Tipos de Pago (Efectivo, Tarjeta, PLIN, YAPE, Depósito, Falta pagar)
  * 2. Tipos de Comprobante (Factura, Boleta, Ticket, Liquidación de Compra, Sin Comprobante)
  * 3. Usuarios base (Admin y Vendedor)
+ * 4. Tasas de IGV (18% Régimen General, 10% MYPE, 0% Exonerado / Inafecto)
  *
  * Puedes agregar más seeds creando su archivo respectivo y llamándolo aquí.
  */
@@ -29,6 +32,7 @@ export const runAllSeeds = async (options: SeedOptions = { clean: true }) => {
         tiposPago: await seedTiposPago({ clean: isClean }),
         tiposComprobante: await seedTiposComprobante({ clean: isClean }),
         usuarios: await seedUsuarios({ clean: isClean }),
+        igv: await seedIgv({ clean: isClean }),
         // Agrega aquí llamadas a futuros seeds del sistema:
         // tiposDocumento: await seedTiposDocumento({ clean: isClean }),
         // categorias: await seedCategorias({ clean: isClean }),
