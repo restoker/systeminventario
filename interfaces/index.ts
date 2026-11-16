@@ -9,3 +9,4 @@ export * from './usuarios';
 export * from './tipo-documento';
 export * from './tipo-pago';
 export * from './consignacion';
+export * from './clientes';
