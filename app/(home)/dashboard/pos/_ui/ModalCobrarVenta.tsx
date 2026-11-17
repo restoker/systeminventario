@@ -17,7 +17,9 @@ import {
     SparklesIcon,
     AlertCircleIcon,
     CheckIcon,
-    ShoppingBagIcon
+    ShoppingBagIcon,
+    SmartphoneIcon,
+    ArrowUpRightIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -57,19 +59,69 @@ interface ModalCobrarVentaProps {
     tipoDocumentos?: TipoDocumentoDto[];
     tiposComprobante?: TipoComprobantePosItem[];
     tiposPago?: TipoPagoDto[];
+    recargoTarjeta?: number;
     onConfirmSale: (saleData: TicketGeneratedData) => void;
 }
 
-// Monedas y billetes nominales vigentes en Perú (en Soles)
-const DENOMINACIONES_PERU = [
-    { valor: 1, tipo: 'moneda' as const, label: 'S/ 1' },
-    { valor: 2, tipo: 'moneda' as const, label: 'S/ 2' },
-    { valor: 5, tipo: 'moneda' as const, label: 'S/ 5' },
-    { valor: 10, tipo: 'billete' as const, label: 'S/ 10' },
-    { valor: 20, tipo: 'billete' as const, label: 'S/ 20' },
-    { valor: 50, tipo: 'billete' as const, label: 'S/ 50' },
-    { valor: 100, tipo: 'billete' as const, label: 'S/ 100' },
-    { valor: 200, tipo: 'billete' as const, label: 'S/ 200' },
+// Billetes oficiales de curso legal en Perú (BCRP)
+const BILLETES_PERU = [
+    {
+        valor: 10,
+        label: 'S/ 10',
+        nombrePersonaje: 'Chabuca Granda',
+        colorClass: 'border-emerald-600/35 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-950 dark:text-emerald-200 dark:border-emerald-500/35',
+        badgeClass: 'bg-emerald-600/15 text-emerald-800 dark:text-emerald-300',
+    },
+    {
+        valor: 20,
+        label: 'S/ 20',
+        nombrePersonaje: 'J. M. Arguedas',
+        colorClass: 'border-amber-600/35 bg-amber-500/10 hover:bg-amber-500/20 text-amber-950 dark:text-amber-200 dark:border-amber-500/35',
+        badgeClass: 'bg-amber-600/15 text-amber-800 dark:text-amber-300',
+    },
+    {
+        valor: 50,
+        label: 'S/ 50',
+        nombrePersonaje: 'M. Rostworowski',
+        colorClass: 'border-rose-600/35 bg-rose-500/10 hover:bg-rose-500/20 text-rose-950 dark:text-rose-200 dark:border-rose-500/35',
+        badgeClass: 'bg-rose-600/15 text-rose-800 dark:text-rose-300',
+    },
+    {
+        valor: 100,
+        label: 'S/ 100',
+        nombrePersonaje: 'Pedro Paulet',
+        colorClass: 'border-blue-600/35 bg-blue-500/10 hover:bg-blue-500/20 text-blue-950 dark:text-blue-200 dark:border-blue-500/35',
+        badgeClass: 'bg-blue-600/15 text-blue-800 dark:text-blue-300',
+    },
+    {
+        valor: 200,
+        label: 'S/ 200',
+        nombrePersonaje: 'Tilsa Tsuchiya',
+        colorClass: 'border-purple-600/35 bg-purple-500/10 hover:bg-purple-500/20 text-purple-950 dark:text-purple-200 dark:border-purple-500/35',
+        badgeClass: 'bg-purple-600/15 text-purple-800 dark:text-purple-300',
+    },
+];
+
+// Monedas metálicas oficiales vigentes en Perú
+const MONEDAS_PERU = [
+    {
+        valor: 1,
+        label: 'S/ 1',
+        tipo: 'Plateada',
+        colorClass: 'border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700',
+    },
+    {
+        valor: 2,
+        label: 'S/ 2',
+        tipo: 'Bimetálica',
+        colorClass: 'border-amber-400/50 bg-gradient-to-br from-amber-50 to-zinc-100 dark:from-amber-950/40 dark:to-zinc-800 text-amber-950 dark:text-amber-200 hover:border-amber-400/80',
+    },
+    {
+        valor: 5,
+        label: 'S/ 5',
+        tipo: 'Bimetálica',
+        colorClass: 'border-amber-500/60 bg-gradient-to-br from-amber-100/80 to-zinc-100 dark:from-amber-900/50 dark:to-zinc-800 text-amber-950 dark:text-amber-100 hover:border-amber-500/90',
+    },
 ];
 
 const DEFAULT_TIPOS_DOCUMENTO: { id: string; nombre: string }[] = [
@@ -124,6 +176,7 @@ export default function ModalCobrarVenta({
     tipoDocumentos = [],
     tiposComprobante = [],
     tiposPago = [],
+    recargoTarjeta = 0.05,
     onConfirmSale,
 }: ModalCobrarVentaProps) {
     // Catálogo de tipos de documento (DB + respaldo)
@@ -187,8 +240,16 @@ export default function ModalCobrarVenta({
     const [selectedTipoComprobanteId, setSelectedTipoComprobanteId] = useState<string>(defaultTipoComprobanteId);
     const [selectedTipoPagoId, setSelectedTipoPagoId] = useState<string>(defaultTipoPagoId);
     const [montoRecibidoInput, setMontoRecibidoInput] = useState<string>('');
-    const [hasUsedKeypad, setHasUsedKeypad] = useState<boolean>(false);
+    const [isPulsing, setIsPulsing] = useState<boolean>(false);
     const [isSearchingDoc, setIsSearchingDoc] = useState<boolean>(false);
+
+    // Efecto visual suave de pulso luminoso al ingresar o cambiar el monto (sin vibración)
+    useEffect(() => {
+        if (!montoRecibidoInput.trim()) return;
+        setIsPulsing(true);
+        const timer = setTimeout(() => setIsPulsing(false), 220);
+        return () => clearTimeout(timer);
+    }, [montoRecibidoInput]);
 
     // Estado del ticket generado tras cobrar
     const [generatedTicket, setGeneratedTicket] = useState<TicketGeneratedData | null>(null);
@@ -202,7 +263,6 @@ export default function ModalCobrarVenta({
         setSelectedTipoComprobanteId(defaultTipoComprobanteId);
         setSelectedTipoPagoId(defaultTipoPagoId);
         setMontoRecibidoInput('');
-        setHasUsedKeypad(false);
         setGeneratedTicket(null);
         setIsSearchingDoc(false);
         onClose();
@@ -236,38 +296,76 @@ export default function ModalCobrarVenta({
         [pagosCatalog, selectedTipoPagoId]
     );
 
+    const pagoNombreLower = (selectedTipoPago?.nombre || '').toLowerCase();
     const isFaltaPagar = useMemo(() => {
-        const name = (selectedTipoPago?.nombre || '').toLowerCase();
-        return name.includes('falta pagar') || name.includes('credito') || name.includes('crédito');
-    }, [selectedTipoPago]);
+        return pagoNombreLower.includes('falta pagar') || pagoNombreLower.includes('credito') || pagoNombreLower.includes('crédito');
+    }, [pagoNombreLower]);
+
+    const isTarjeta = useMemo(() => {
+        return pagoNombreLower.includes('tarjeta');
+    }, [pagoNombreLower]);
+
+    const isYapePlin = useMemo(() => {
+        return pagoNombreLower.includes('yape') || pagoNombreLower.includes('plin');
+    }, [pagoNombreLower]);
+
+    const isDeposito = useMemo(() => {
+        return pagoNombreLower.includes('deposito') || pagoNombreLower.includes('transferencia');
+    }, [pagoNombreLower]);
+
+    const isEfectivo = useMemo(() => {
+        return !isTarjeta && !isYapePlin && !isDeposito && !isFaltaPagar;
+    }, [isTarjeta, isYapePlin, isDeposito, isFaltaPagar]);
+
+    const porcentajeRecargo = recargoTarjeta;
+    const montoRecargo = useMemo(() => {
+        if (!isTarjeta) return 0;
+        return Number((total * porcentajeRecargo).toFixed(2));
+    }, [isTarjeta, total, porcentajeRecargo]);
+
+    const totalFinal = useMemo(() => {
+        return isTarjeta ? Number((total + montoRecargo).toFixed(2)) : total;
+    }, [isTarjeta, total, montoRecargo]);
+
+    // Billetes sugeridos de pago rápido (Quick Cash): ej. si total es 38, sugiere 50 y 100
+    const suggestedCashBills = useMemo(() => {
+        if (!isEfectivo || totalFinal <= 0) return [];
+        const denominations = [10, 20, 50, 100, 200];
+        const higher = denominations.filter((d) => d > totalFinal);
+        return higher.slice(0, 2);
+    }, [isEfectivo, totalFinal]);
 
     const docNameUpper = (selectedTipoDoc?.nombre || '').toUpperCase();
     const isDni = docNameUpper === 'DNI';
     const isRuc = docNameUpper === 'RUC';
     const isSinDoc = docNameUpper.includes('SIN DOC');
 
-    const displayedMontoInput = hasUsedKeypad
-        ? montoRecibidoInput
-        : total > 0
-            ? total.toFixed(2)
-            : '0.00';
+    // El input NO tiene valor por defecto: el usuario debe ingresar lo que recibe
+    const hasEnteredAmount = montoRecibidoInput.trim() !== '';
 
     const montoRecibido = useMemo(() => {
-        const parsed = parseFloat(displayedMontoInput);
+        if (!hasEnteredAmount) return 0;
+        const parsed = parseFloat(montoRecibidoInput);
         return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
-    }, [displayedMontoInput]);
+    }, [hasEnteredAmount, montoRecibidoInput]);
+
+    const isFullyPaid = useMemo(() => {
+        return hasEnteredAmount && montoRecibido >= totalFinal;
+    }, [hasEnteredAmount, montoRecibido, totalFinal]);
 
     const vuelto = useMemo(() => {
-        return Math.max(0, Number((montoRecibido - total).toFixed(2)));
-    }, [montoRecibido, total]);
+        if (!hasEnteredAmount) return 0;
+        return Math.max(0, Number((montoRecibido - totalFinal).toFixed(2)));
+    }, [hasEnteredAmount, montoRecibido, totalFinal]);
 
     const faltante = useMemo(() => {
-        return Math.max(0, Number((total - montoRecibido).toFixed(2)));
-    }, [montoRecibido, total]);
+        if (!hasEnteredAmount) return totalFinal;
+        return Math.max(0, Number((totalFinal - montoRecibido).toFixed(2)));
+    }, [hasEnteredAmount, montoRecibido, totalFinal]);
 
     const opGravada = useMemo(() => {
-        return Number((total - igvTotal).toFixed(2));
-    }, [total, igvTotal]);
+        return Number((totalFinal - igvTotal).toFixed(2));
+    }, [totalFinal, igvTotal]);
 
     // Correlativo estimado para vista previa
     const previewCorrelativo = useMemo(() => {
@@ -295,43 +393,29 @@ export default function ModalCobrarVenta({
         }
     };
 
-    // Al cambiar tipo de pago
+    // Al cambiar tipo de pago: NO se agrega ningún valor por defecto al monto recibido
     const handleTipoPagoChange = (newPagoId: string) => {
         setSelectedTipoPagoId(newPagoId);
-        const pagoObj = pagosCatalog.find((p) => p.id === newPagoId);
-        const name = (pagoObj?.nombre || '').toLowerCase();
-        if (name.includes('falta pagar') || name.includes('credito') || name.includes('crédito')) {
-            if (!hasUsedKeypad) {
-                setHasUsedKeypad(true);
-                setMontoRecibidoInput('0.00');
-            }
-        } else if (name.includes('tarjeta') || name.includes('yape') || name.includes('plin') || name.includes('deposito')) {
-            if (!hasUsedKeypad || montoRecibido === 0) {
-                setHasUsedKeypad(false);
-                setMontoRecibidoInput(total.toFixed(2));
-            }
-        }
     };
 
-    // Botonera de montos nominales en Soles (1, 2, 5, 10, 20, 50, 100, 200)
+    // Fijar pago directo con un billete (ej. el cliente entregó un billete de 50 o 100)
+    const handlePayWithBill = (billValue: number) => {
+        setMontoRecibidoInput(billValue.toFixed(2));
+    };
+
+    // Sumar denominación (billete o moneda)
     const handleAddDenominacion = (valor: number) => {
-        if (!hasUsedKeypad) {
-            setHasUsedKeypad(true);
-            setMontoRecibidoInput(valor.toFixed(2));
-        } else {
-            const nuevoMonto = Number((montoRecibido + valor).toFixed(2));
-            setMontoRecibidoInput(nuevoMonto.toFixed(2));
-        }
+        const actual = parseFloat(montoRecibidoInput) || 0;
+        const nuevoMonto = actual === 0 ? valor : Number((actual + valor).toFixed(2));
+        setMontoRecibidoInput(nuevoMonto.toFixed(2));
     };
 
     const handleSetExactAmount = () => {
-        setHasUsedKeypad(false);
-        setMontoRecibidoInput(total.toFixed(2));
+        setMontoRecibidoInput(totalFinal.toFixed(2));
     };
 
     const handleClearAmount = () => {
-        setHasUsedKeypad(true);
-        setMontoRecibidoInput('0.00');
+        setMontoRecibidoInput('');
     };
 
     // Consulta opcional DNI / RUC
@@ -417,13 +501,15 @@ export default function ModalCobrarVenta({
             items: cart,
             opGravada,
             igv: igvTotal,
-            total,
+            total: totalFinal,
             montoRecibido,
             vuelto,
             sucursal,
             vendedorNombre,
             tipoPagoNombre: selectedTipoPago?.nombre || 'Efectivo',
             tipoPagoId: selectedTipoPago?.id,
+            recargoTarjeta: isTarjeta ? porcentajeRecargo : undefined,
+            montoRecargo: isTarjeta ? montoRecargo : undefined,
         };
     }, [
         generatedTicket,
@@ -439,7 +525,10 @@ export default function ModalCobrarVenta({
         cart,
         opGravada,
         igvTotal,
-        total,
+        totalFinal,
+        isTarjeta,
+        porcentajeRecargo,
+        montoRecargo,
         montoRecibido,
         vuelto,
         sucursal,
@@ -467,8 +556,12 @@ export default function ModalCobrarVenta({
             return;
         }
 
-        if (!isFaltaPagar && montoRecibido < total) {
-            toast.error(`El monto recibido (S/ ${montoRecibido.toFixed(2)}) es menor al total a cobrar (S/ ${total.toFixed(2)})`);
+        if (!isFaltaPagar && (!hasEnteredAmount || montoRecibido < totalFinal)) {
+            toast.error(
+                !hasEnteredAmount
+                    ? 'Ingresa el monto recibido para registrar el cobro'
+                    : `El monto recibido (S/ ${montoRecibido.toFixed(2)}) es menor al total a cobrar (S/ ${totalFinal.toFixed(2)})`
+            );
             return;
         }
 
@@ -635,14 +728,14 @@ export default function ModalCobrarVenta({
                                     </div>
                                 </div>
                             ) : (
-                                <form id="pos-checkout-form" onSubmit={handleConfirmarCobro} className="space-y-5">
+                                <form id="pos-checkout-form" onSubmit={handleConfirmarCobro} className="space-y-4">
                                     {/* 1. Selección de Tipo de Comprobante y Datos del Cliente */}
-                                    <div className="rounded-xl border bg-muted/10 p-4 space-y-4">
+                                    <div className="rounded-xl border bg-card p-4 space-y-3.5 shadow-2xs">
                                         <div className="flex items-center justify-between border-b pb-2.5">
                                             <div className="flex items-center gap-2">
                                                 <FileTextIcon className="size-4 text-primary" />
                                                 <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                                                    Comprobante, Tipo de Pago y Datos del Cliente
+                                                    1. Comprobante, Método de Pago y Cliente
                                                 </h3>
                                             </div>
                                             <span className="text-[11px] font-mono text-muted-foreground">
@@ -676,11 +769,16 @@ export default function ModalCobrarVenta({
                                                 <div className="flex items-center justify-between">
                                                     <Label htmlFor="select-tipo-pago" className="text-xs font-semibold flex items-center gap-1.5">
                                                         <CreditCardIcon className="size-3.5 text-primary" />
-                                                        <span>Tipo / Método de Pago</span>
+                                                        <span>Método de Pago</span>
                                                     </Label>
                                                     {isFaltaPagar && (
                                                         <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold uppercase bg-amber-500/15 px-1.5 py-0.5 rounded">
                                                             Crédito / Pendiente
+                                                        </span>
+                                                    )}
+                                                    {isTarjeta && (
+                                                        <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold uppercase bg-amber-500/15 px-1.5 py-0.5 rounded">
+                                                            +{(porcentajeRecargo * 100).toFixed(1)}% Recargo
                                                         </span>
                                                     )}
                                                 </div>
@@ -698,6 +796,23 @@ export default function ModalCobrarVenta({
                                                 </select>
                                             </div>
                                         </div>
+
+                                        {/* Alerta informativa de recargo por pago con tarjeta */}
+                                        {isTarjeta && (
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs rounded-xl p-3 bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200">
+                                                <div className="flex items-center gap-2">
+                                                    <CreditCardIcon className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                                                    <span>
+                                                        Recargo del <strong>{(porcentajeRecargo * 100).toFixed(1)}%</strong> por procesamiento con Tarjeta:
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2 font-mono text-xs">
+                                                    <span className="text-muted-foreground line-through text-[11px]">S/ {total.toFixed(2)}</span>
+                                                    <span className="font-bold text-amber-800 dark:text-amber-300">+S/ {montoRecargo.toFixed(2)}</span>
+                                                    <span className="font-extrabold text-foreground">S/ {totalFinal.toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* Fila 2: Tipo de Documento y N° de Documento con botón consultar */}
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -792,13 +907,13 @@ export default function ModalCobrarVenta({
                                         </div>
                                     </div>
 
-                                    {/* 2. Sección de Cobro y Botonera Rápida de Monedas/Billetes de Perú */}
-                                    <div className="rounded-xl border bg-muted/10 p-4 space-y-4">
+                                    {/* 2. Sección de Cobro, Liquidación y Botonera Rápida (Soles - Perú) */}
+                                    <div className="rounded-xl border bg-card p-4 space-y-4 shadow-2xs">
                                         <div className="flex items-center justify-between border-b pb-2.5">
                                             <div className="flex items-center gap-2">
-                                                <BanknoteIcon className="size-4 text-primary" />
+                                                <CoinsIcon className="size-4 text-primary" />
                                                 <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                                                    Monto Recibido ({selectedTipoPago?.nombre || 'Efectivo'}) y Botonera Rápida (Soles - Perú)
+                                                    2. Liquidación y Cobro en Caja
                                                 </h3>
                                             </div>
                                             <div className="flex items-center gap-1.5">
@@ -807,83 +922,79 @@ export default function ModalCobrarVenta({
                                                     variant="outline"
                                                     size="xs"
                                                     onClick={handleSetExactAmount}
-                                                    className="h-7 text-[11px] gap-1 cursor-pointer"
+                                                    className="h-7 text-[11px] gap-1 cursor-pointer font-medium"
                                                 >
                                                     <SparklesIcon className="size-3 text-primary" />
-                                                    <span>Monto Exacto (S/ {total.toFixed(2)})</span>
+                                                    <span>Monto Exacto (S/ {totalFinal.toFixed(2)})</span>
                                                 </Button>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="xs"
-                                                    onClick={handleClearAmount}
-                                                    className="h-7 text-[11px] gap-1 text-muted-foreground hover:text-destructive cursor-pointer"
-                                                >
-                                                    <RotateCcwIcon className="size-3" />
-                                                    <span>Limpiar</span>
-                                                </Button>
+                                                {hasEnteredAmount && (
+                                                    <Button
+                                                        type="button"
+                                                        size="xs"
+                                                        onClick={handleClearAmount}
+                                                        className="h-7 text-xs font-bold gap-1.5 cursor-pointer bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-red-950/60 dark:hover:bg-red-900/80 dark:text-red-300 dark:border-red-800 shadow-2xs transition-all active:scale-95"
+                                                    >
+                                                        <RotateCcwIcon className="size-3.5 stroke-[2.2]" />
+                                                        <span>Limpiar</span>
+                                                    </Button>
+                                                )}
                                             </div>
                                         </div>
 
-                                        {/* Botonera de Denominaciones Peruanas: 1, 2, 5, 10, 20, 50, 100 y 200 Soles */}
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                                                <span>
-                                                    {isFaltaPagar
-                                                        ? 'Indica el monto a cuenta entregado por el cliente (o deja en 0.00 para crédito total):'
-                                                        : 'Haz clic en las monedas o billetes que entregó el cliente para sumar o elegir el monto rápido:'}
-                                                </span>
-                                            </div>
-                                            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                                                {DENOMINACIONES_PERU.map((denom) => {
-                                                    const isMoneda = denom.tipo === 'moneda';
-                                                    return (
-                                                        <button
-                                                            key={denom.valor}
-                                                            type="button"
-                                                            onClick={() => handleAddDenominacion(denom.valor)}
-                                                            className={`group relative flex flex-col items-center justify-center rounded-xl border p-2.5 transition-all cursor-pointer active:scale-95 select-none ${isMoneda
-                                                                    ? 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-800 dark:text-amber-300'
-                                                                    : 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 text-emerald-800 dark:text-emerald-300'
-                                                                }`}
-                                                        >
-                                                            <span className="text-[9px] uppercase font-bold tracking-wider opacity-75">
-                                                                {isMoneda ? 'Moneda' : 'Billete'}
-                                                            </span>
-                                                            <span className="text-sm font-extrabold font-mono mt-0.5">
-                                                                {denom.label}
-                                                            </span>
-                                                            <span className="text-[9px] font-mono opacity-70 mt-0.5">
-                                                                +{denom.valor}.00
-                                                            </span>
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-
-                                        {/* Input Manual de Monto Recibido + Indicador de Vuelto / Cambio */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                                            {/* Total a Pagar */}
-                                            <div className="rounded-xl border bg-card p-3 flex flex-col justify-between">
-                                                <span className="text-[11px] font-semibold text-muted-foreground uppercase">
-                                                    Total a Cobrar
-                                                </span>
-                                                <span className="text-xl font-extrabold font-mono text-foreground mt-1">
-                                                    S/ {total.toFixed(2)}
-                                                </span>
+                                        {/* Panel de Métricas: Total a Cobrar, Monto Recibido y Vuelto */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-stretch">
+                                            {/* Total a Cobrar */}
+                                            <div className="sm:col-span-4 rounded-xl border bg-muted/30 p-3.5 flex flex-col justify-between">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                                        Total a Cobrar
+                                                    </span>
+                                                    {isTarjeta && (
+                                                        <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded">
+                                                            +{(porcentajeRecargo * 100).toFixed(0)}%
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="my-1.5">
+                                                    <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-foreground">
+                                                        S/ {totalFinal.toFixed(2)}
+                                                    </span>
+                                                </div>
+                                                <div className="text-[10px] text-muted-foreground font-mono">
+                                                    {isTarjeta ? (
+                                                        <span>Base: S/ {total.toFixed(2)} | Rec.: +S/ {montoRecargo.toFixed(2)}</span>
+                                                    ) : (
+                                                        <span>{cart.reduce((a, b) => a + b.cantidad, 0)} {cart.reduce((a, b) => a + b.cantidad, 0) === 1 ? 'producto' : 'productos'}</span>
+                                                    )}
+                                                </div>
                                             </div>
 
-                                            {/* Input Monto Recibido */}
-                                            <div className="rounded-xl border-2 border-primary/50 bg-card p-3 flex flex-col justify-between">
-                                                <Label
-                                                    htmlFor="input-monto-recibido"
-                                                    className="text-[11px] font-bold text-primary uppercase"
-                                                >
-                                                    Monto Recibido (S/)
-                                                </Label>
-                                                <div className="relative mt-1">
-                                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground font-mono">
+                                            {/* Input Monto Recibido con efecto visual de pulso luminoso suave (sin vibración) */}
+                                            <div
+                                                className={`sm:col-span-4 rounded-xl border-2 p-3.5 flex flex-col justify-between transition-all duration-300 ease-out shadow-2xs ${
+                                                    isFullyPaid
+                                                        ? 'border-emerald-500/70 bg-emerald-500/5 ring-4 ring-emerald-500/20'
+                                                        : isPulsing
+                                                            ? 'border-primary ring-4 ring-primary/25 bg-primary/5 scale-[1.01]'
+                                                            : 'border-primary/40 bg-background ring-0'
+                                                }`}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <Label htmlFor="input-monto-recibido" className="text-[11px] font-bold uppercase tracking-wider text-primary">
+                                                        Monto Recibido
+                                                    </Label>
+                                                    {isFullyPaid ? (
+                                                        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-1.5 py-0.5 rounded transition-all animate-in fade-in duration-200">
+                                                            <CheckIcon className="size-3" /> Cubierto
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-[10px] font-mono text-muted-foreground">
+                                                            {selectedTipoPago?.nombre || 'Efectivo'}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="relative my-1">
+                                                    <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-base font-extrabold font-mono transition-colors duration-200 ${isFullyPaid ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
                                                         S/
                                                     </span>
                                                     <Input
@@ -891,54 +1002,230 @@ export default function ModalCobrarVenta({
                                                         type="number"
                                                         step="0.10"
                                                         min="0"
-                                                        value={displayedMontoInput}
-                                                        onChange={(e) => {
-                                                            setHasUsedKeypad(true);
-                                                            setMontoRecibidoInput(e.target.value);
-                                                        }}
+                                                        value={montoRecibidoInput}
+                                                        onChange={(e) => setMontoRecibidoInput(e.target.value)}
                                                         placeholder="0.00"
-                                                        className="pl-8 h-9 text-base font-extrabold font-mono border-0 bg-muted/40 focus-visible:ring-1"
+                                                        className="pl-9 h-11 text-xl sm:text-2xl font-black font-mono border-0 bg-transparent focus-visible:ring-0 rounded-lg transition-transform duration-150"
                                                     />
+                                                </div>
+                                                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                                                    <span>{isEfectivo ? 'Ingresa monto o pulsa billetes' : 'Importe recibido'}</span>
                                                 </div>
                                             </div>
 
-                                            {/* Vuelto o Faltante / Saldo Pendiente */}
+                                            {/* Vuelto / Saldo Pendiente */}
                                             <div
-                                                className={`rounded-xl border p-3 flex flex-col justify-between ${faltante > 0
-                                                        ? isFaltaPagar
-                                                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300'
-                                                            : 'bg-destructive/10 border-destructive/30 text-destructive'
-                                                        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
-                                                    }`}
+                                                className={`sm:col-span-4 rounded-xl border p-3.5 flex flex-col justify-between transition-colors ${
+                                                    !hasEnteredAmount
+                                                        ? 'bg-muted/30 border-border text-foreground'
+                                                        : faltante > 0
+                                                            ? isFaltaPagar
+                                                                ? 'bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200'
+                                                                : 'bg-destructive/10 border-destructive/30 text-destructive'
+                                                            : vuelto > 0
+                                                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-900 dark:text-emerald-200'
+                                                                : 'bg-muted/30 border-border text-foreground'
+                                                }`}
                                             >
-                                                <span className="text-[11px] font-bold uppercase">
-                                                    {faltante > 0
-                                                        ? isFaltaPagar
-                                                            ? 'Saldo Pendiente'
-                                                            : 'Monto Faltante'
-                                                        : 'Vuelto / Cambio'}
-                                                </span>
-                                                <span className="text-xl font-extrabold font-mono mt-1">
-                                                    S/ {(faltante > 0 ? faltante : vuelto).toFixed(2)}
-                                                </span>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[11px] font-bold uppercase tracking-wider">
+                                                        {!hasEnteredAmount
+                                                            ? 'Vuelto al Cliente'
+                                                            : faltante > 0
+                                                                ? isFaltaPagar
+                                                                    ? 'Saldo Pendiente'
+                                                                    : 'Monto Faltante'
+                                                                : 'Vuelto al Cliente'}
+                                                    </span>
+                                                    {hasEnteredAmount && vuelto > 0 && (
+                                                        <span className="text-[10px] font-bold uppercase bg-emerald-500/20 px-1.5 py-0.5 rounded text-emerald-800 dark:text-emerald-300">
+                                                            Entregar
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="my-1.5">
+                                                    <span
+                                                        className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${
+                                                            !hasEnteredAmount
+                                                                ? 'text-muted-foreground opacity-50'
+                                                                : faltante > 0
+                                                                    ? isFaltaPagar
+                                                                        ? 'text-amber-700 dark:text-amber-400'
+                                                                        : 'text-destructive'
+                                                                    : vuelto > 0
+                                                                        ? 'text-emerald-600 dark:text-emerald-400'
+                                                                        : 'text-muted-foreground'
+                                                        }`}
+                                                    >
+                                                        S/ {(hasEnteredAmount ? (faltante > 0 ? faltante : vuelto) : 0).toFixed(2)}
+                                                    </span>
+                                                </div>
+                                                <div className="text-[10px] font-medium opacity-80">
+                                                    {!hasEnteredAmount
+                                                        ? 'Esperando ingreso de monto del cliente'
+                                                        : faltante > 0
+                                                            ? isFaltaPagar
+                                                                ? 'Registrado a crédito en cuenta cliente'
+                                                                : `Faltan S/ ${faltante.toFixed(2)} para completar`
+                                                            : vuelto > 0
+                                                                ? 'Entregar cambio en efectivo'
+                                                                : 'Importe exacto cubierto'}
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {faltante > 0 && (
-                                            <div
-                                                className={`flex items-center gap-2 text-xs rounded-lg px-3 py-2 ${isFaltaPagar
-                                                        ? 'text-amber-800 dark:text-amber-300 bg-amber-500/10 border border-amber-500/30'
-                                                        : 'text-destructive bg-destructive/5 border border-destructive/20'
-                                                    }`}
-                                            >
-                                                <AlertCircleIcon className="size-4 shrink-0" />
-                                                <span>
-                                                    {isFaltaPagar
-                                                        ? `Venta al crédito / Pendiente de pago. Quedará un saldo pendiente de S/ ${faltante.toFixed(2)}.`
-                                                        : `Faltan S/ ${faltante.toFixed(2)} para cubrir el importe total de la venta.`}
-                                                </span>
+                                        {/* Botonera de Pago Rápido en Efectivo */}
+                                        {isEfectivo ? (
+                                            <div className="space-y-3.5 pt-1 border-t">
+                                                {/* Atajos Rápidos: Monto Exacto y Billetes Sugeridos (1 solo clic) */}
+                                                <div className="space-y-1.5">
+                                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                                        <span className="font-semibold text-foreground flex items-center gap-1.5">
+                                                            <SparklesIcon className="size-3 text-primary" />
+                                                            Atajos Rápidos de Pago
+                                                        </span>
+                                                        <span className="text-[10px]">Un solo toque para calcular vuelto</span>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={handleSetExactAmount}
+                                                            className="h-8 text-xs font-semibold gap-1.5 cursor-pointer bg-background"
+                                                        >
+                                                            <CheckIcon className="size-3.5 text-primary" />
+                                                            <span>Exacto S/ {totalFinal.toFixed(2)}</span>
+                                                        </Button>
+
+                                                        {suggestedCashBills.map((bill) => {
+                                                            const vueltoCalculado = bill - totalFinal;
+                                                            return (
+                                                                <Button
+                                                                    key={bill}
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => handlePayWithBill(bill)}
+                                                                    className="h-8 text-xs font-semibold gap-1.5 cursor-pointer bg-background"
+                                                                >
+                                                                    <BanknoteIcon className="size-3.5 text-muted-foreground" />
+                                                                    <span>Paga con S/ {bill}</span>
+                                                                    <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                                                                        (Vuelto S/ {vueltoCalculado.toFixed(2)})
+                                                                    </span>
+                                                                </Button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+
+                                                {/* Denominaciones de Perú: Billetes (5) y Monedas (3) */}
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                                        <span className="font-semibold text-foreground flex items-center gap-1.5">
+                                                            <BanknoteIcon className="size-3.5 text-primary" />
+                                                            Billetes y Monedas del Perú
+                                                        </span>
+                                                        <span className="text-[10px]">Pulsa para sumar dinero recibido</span>
+                                                    </div>
+
+                                                    {/* Cuadrícula de Billetes (S/ 10, S/ 20, S/ 50, S/ 100, S/ 200) */}
+                                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                                        {BILLETES_PERU.map((billete) => (
+                                                            <button
+                                                                key={billete.valor}
+                                                                type="button"
+                                                                onClick={() => handleAddDenominacion(billete.valor)}
+                                                                className={`relative flex flex-col items-center justify-center rounded-xl border p-2 transition-all cursor-pointer active:scale-95 select-none ${billete.colorClass}`}
+                                                            >
+                                                                <span className="text-[9px] uppercase font-bold tracking-wider opacity-65">
+                                                                    Billete PEN
+                                                                </span>
+                                                                <span className="text-base sm:text-lg font-black font-mono my-0.5">
+                                                                    {billete.label}
+                                                                </span>
+                                                                <span className="text-[9px] font-mono font-medium opacity-80">
+                                                                    +{billete.valor}.00
+                                                                </span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Monedas de Perú (S/ 1, S/ 2, S/ 5) */}
+                                                    <div className="flex items-center justify-start gap-2.5 pt-1">
+                                                        <span className="text-xs font-semibold text-muted-foreground mr-1">
+                                                            Monedas:
+                                                        </span>
+                                                        {MONEDAS_PERU.map((moneda) => (
+                                                            <button
+                                                                key={moneda.valor}
+                                                                type="button"
+                                                                onClick={() => handleAddDenominacion(moneda.valor)}
+                                                                className={`size-10 sm:size-11 rounded-full border-2 flex flex-col items-center justify-center transition-all cursor-pointer active:scale-95 select-none ${moneda.colorClass}`}
+                                                                title={`Sumar moneda de ${moneda.label}`}
+                                                            >
+                                                                <span className="text-xs font-black font-mono leading-none">
+                                                                    {moneda.label}
+                                                                </span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             </div>
-                                        )}
+                                        ) : isTarjeta ? (
+                                            /* Panel informativo cuando el método es Tarjeta */
+                                            <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3.5 space-y-2 text-xs">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2 font-semibold text-foreground">
+                                                        <CreditCardIcon className="size-4 text-amber-600 dark:text-amber-400" />
+                                                        <span>Cobro Electrónico con Tarjeta (POS)</span>
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="xs"
+                                                        onClick={handleSetExactAmount}
+                                                        className="h-7 text-xs font-semibold cursor-pointer"
+                                                    >
+                                                        Fijar Total S/ {totalFinal.toFixed(2)}
+                                                    </Button>
+                                                </div>
+                                                <p className="text-muted-foreground text-[11px]">
+                                                    Desliza, inserta o acerca la tarjeta del cliente en el terminal POS físico de la tienda. El importe a cobrar incluye el {((porcentajeRecargo) * 100).toFixed(1)}% de recargo.
+                                                </p>
+                                            </div>
+                                        ) : isYapePlin ? (
+                                            /* Panel informativo cuando el método es YAPE / PLIN */
+                                            <div className="rounded-xl border border-purple-500/25 bg-purple-500/5 p-3.5 space-y-2 text-xs">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2 font-semibold text-foreground">
+                                                        <SmartphoneIcon className="size-4 text-purple-600 dark:text-purple-400" />
+                                                        <span>Pago Digital YAPE / PLIN</span>
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="xs"
+                                                        onClick={handleSetExactAmount}
+                                                        className="h-7 text-xs font-semibold cursor-pointer"
+                                                    >
+                                                        Fijar Total S/ {totalFinal.toFixed(2)}
+                                                    </Button>
+                                                </div>
+                                                <p className="text-muted-foreground text-[11px]">
+                                                    Verifica la notificación o comprobante de pago exitoso en el teléfono receptor de la tienda antes de finalizar la venta.
+                                                </p>
+                                            </div>
+                                        ) : isFaltaPagar ? (
+                                            /* Panel informativo para crédito */
+                                            <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3.5 text-xs text-amber-900 dark:text-amber-200">
+                                                <p className="font-semibold">Venta al Crédito / Pendiente de Pago</p>
+                                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                                    Si el cliente deja un monto a cuenta, ingrésalo arriba. El saldo restante (S/ {faltante.toFixed(2)}) se registrará como cuenta por cobrar.
+                                                </p>
+                                            </div>
+                                        ) : null}
                                     </div>
                                 </form>
                             )}
@@ -992,12 +1279,12 @@ export default function ModalCobrarVenta({
                                 <Button
                                     type="submit"
                                     form="pos-checkout-form"
-                                    disabled={cart.length === 0 || (!isFaltaPagar && montoRecibido < total)}
+                                    disabled={cart.length === 0 || (!isFaltaPagar && (!hasEnteredAmount || montoRecibido < totalFinal))}
                                     className="gap-2 font-bold cursor-pointer min-w-52"
                                 >
                                     <CoinsIcon className="size-4" />
                                     <span>
-                                        Confirmar Cobro ({selectedTipoPago?.nombre || 'Efectivo'} - S/ {total.toFixed(2)})
+                                        Confirmar Cobro ({selectedTipoPago?.nombre || 'Efectivo'} - S/ {totalFinal.toFixed(2)})
                                     </span>
                                 </Button>
                             </>

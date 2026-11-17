@@ -45,6 +45,8 @@ export interface TicketGeneratedData {
     vendedorNombre: string;
     tipoPagoNombre?: string;
     tipoPagoId?: string;
+    recargoTarjeta?: number;
+    montoRecargo?: number;
 }
 
 export function numeroALetrasSoles(monto: number): string {
@@ -116,7 +118,8 @@ export function downloadTicketImage(ticketData: TicketGeneratedData): void {
         const baseHeight = 510;
         const itemRowHeight = 40;
         const extraAddressHeight = ticketData.clienteDireccion ? 22 : 0;
-        const height = baseHeight + ticketData.items.length * itemRowHeight + extraAddressHeight;
+        const extraRecargoHeight = ticketData.montoRecargo && ticketData.montoRecargo > 0 ? 18 : 0;
+        const height = baseHeight + ticketData.items.length * itemRowHeight + extraAddressHeight + extraRecargoHeight;
 
         canvas.width = width * scale;
         canvas.height = height * scale;
@@ -267,7 +270,13 @@ export function downloadTicketImage(ticketData: TicketGeneratedData): void {
         drawKeyValue('OP. GRAVADA (S/):', `S/ ${ticketData.opGravada.toFixed(2)}`, y);
         y += 16;
         drawKeyValue('I.G.V. (18%):', `S/ ${ticketData.igv.toFixed(2)}`, y);
-        y += 18;
+        y += 16;
+
+        if (ticketData.montoRecargo && ticketData.montoRecargo > 0) {
+            const pct = ((ticketData.recargoTarjeta ?? 0.05) * 100).toFixed(1);
+            drawKeyValue(`RECARGO TARJETA (${pct}%):`, `+ S/ ${ticketData.montoRecargo.toFixed(2)}`, y);
+            y += 16;
+        }
 
         ctx.font = 'bold 14px monospace';
         ctx.fillStyle = '#111827';
@@ -417,6 +426,9 @@ export function printTicket(ticketData: TicketGeneratedData): void {
             <div class="divider"></div>
             <div class="row"><span>OP. GRAVADA:</span><span>S/ ${ticketData.opGravada.toFixed(2)}</span></div>
             <div class="row"><span>I.G.V. (18%):</span><span>S/ ${ticketData.igv.toFixed(2)}</span></div>
+            ${ticketData.montoRecargo && ticketData.montoRecargo > 0 ? `
+            <div class="row"><span>RECARGO TARJETA (${((ticketData.recargoTarjeta ?? 0.05) * 100).toFixed(1)}%):</span><span>+ S/ ${ticketData.montoRecargo.toFixed(2)}</span></div>
+            ` : ''}
             <div class="row bold" style="font-size:13px;"><span>TOTAL A PAGAR:</span><span>S/ ${ticketData.total.toFixed(2)}</span></div>
             <div class="divider"></div>
             <div class="row"><span>MÉTODO DE PAGO:</span><span class="bold">${(ticketData.tipoPagoNombre || 'EFECTIVO').toUpperCase()}</span></div>
@@ -588,6 +600,12 @@ export default function TicketVenta({
                         <span className="text-zinc-600">I.G.V. (18%):</span>
                         <span>S/ {ticketData.igv.toFixed(2)}</span>
                     </div>
+                    {ticketData.montoRecargo !== undefined && ticketData.montoRecargo > 0 && (
+                        <div className="flex justify-between text-amber-700 dark:text-amber-500 font-medium">
+                            <span>RECARGO TARJETA ({((ticketData.recargoTarjeta ?? 0.05) * 100).toFixed(1)}%):</span>
+                            <span>+ S/ {ticketData.montoRecargo.toFixed(2)}</span>
+                        </div>
+                    )}
                     <div className="flex justify-between font-extrabold text-xs pt-1 border-t border-dashed border-zinc-300">
                         <span>TOTAL A PAGAR:</span>
                         <span>S/ {ticketData.total.toFixed(2)}</span>

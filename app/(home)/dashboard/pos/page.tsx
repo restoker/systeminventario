@@ -25,6 +25,8 @@ export default async function PosPage({ searchParams }: PageProps) {
     const params = await searchParams;
     const sucursalId = params?.sucursalId;
 
+    const configuraciones = await db.query.configuracion.findFirst();
+
     if (session.user.role === 'admin') {
         // ADMIN PART: El administrador puede elegir en qué local vender
         const sucursales = await db.query.sucursal.findMany({
@@ -125,6 +127,7 @@ export default async function PosPage({ searchParams }: PageProps) {
                     tipoDocumentos={tipoDocumentos}
                     tiposComprobante={tiposComprobante}
                     tiposPago={tiposPago}
+                    recargoTarjeta={configuraciones?.recargoTarjeta ?? 0.05}
                     canChangeSucursal={true}
                 />
             </SidebarAux>
@@ -227,6 +230,7 @@ export default async function PosPage({ searchParams }: PageProps) {
                     tipoDocumentos={tipoDocumentos}
                     tiposComprobante={tiposComprobante}
                     tiposPago={tiposPago}
+                    recargoTarjeta={configuraciones?.recargoTarjeta ?? 0.05}
                     canChangeSucursal={false}
                 />
             </SidebarAux>

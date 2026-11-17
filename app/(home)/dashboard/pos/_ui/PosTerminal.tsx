@@ -67,6 +67,7 @@ interface PosTerminalProps {
     tipoDocumentos?: TipoDocumentoDto[];
     tiposComprobante?: TipoComprobantePosItem[];
     tiposPago?: TipoPagoDto[];
+    recargoTarjeta?: number;
     canChangeSucursal?: boolean;
 }
 
@@ -90,6 +91,7 @@ export default function PosTerminal({
     tipoDocumentos = [],
     tiposComprobante = [],
     tiposPago = [],
+    recargoTarjeta = 0.05,
     canChangeSucursal = false,
 }: PosTerminalProps) {
     const router = useRouter();
@@ -703,6 +705,7 @@ export default function PosTerminal({
                 tipoDocumentos={tipoDocumentos}
                 tiposComprobante={tiposComprobante}
                 tiposPago={tiposPago}
+                recargoTarjeta={recargoTarjeta}
                 onConfirmSale={handleConfirmSale}
             />
         </div>
