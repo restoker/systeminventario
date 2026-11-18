@@ -1,5 +1,6 @@
 import { coreTable } from "./communityShieldColumns";
 import { text, boolean, integer } from "drizzle-orm/pg-core";
+import { rucEmpresa } from "./ruc";
 
 export const tipoComprobante = coreTable("tipo_comprobante", {
     nombre: text('nombre').notNull(),
@@ -8,6 +9,7 @@ export const tipoComprobante = coreTable("tipo_comprobante", {
     numero: text('numero').notNull(),
     nombreSunat: text('nombre_sunat'),
     correlative: integer('correlative').notNull(),
+    rucId: text('ruc_id').references(() => rucEmpresa.id),
 });
 
 export type TipoComprobante = typeof tipoComprobante.$inferSelect;

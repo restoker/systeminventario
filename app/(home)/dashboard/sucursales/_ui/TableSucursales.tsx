@@ -67,10 +67,12 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toggleSucursalAction } from '@/server/actions/sucursal/toggle-sucursal-action';
 import ModalSucursalForm from './ModalSucursalForm';
+import type { RucEmpresa } from '@/server/schema/ruc';
 // import { useSearchParams } from 'next/navigation';
 
 interface TableSucursalesProps {
     sucursales: Sucursal[];
+    rucs?: RucEmpresa[];
 }
 
 const features = tableFeatures({
@@ -79,7 +81,7 @@ const features = tableFeatures({
     paginatedRowModel: createPaginatedRowModel()
 });
 
-export default function TableSucursales({ sucursales }: TableSucursalesProps) {
+export default function TableSucursales({ sucursales, rucs }: TableSucursalesProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
     const [selectedSucursal, setSelectedSucursal] = useState<Sucursal | null>(null);
@@ -127,13 +129,14 @@ export default function TableSucursales({ sucursales }: TableSucursalesProps) {
     const filteredData = useMemo(() => {
         return sucursales.filter(item => {
             const query = searchQuery.trim().toLowerCase();
+            const rucNum = item.rucEmpresa?.numeroRuc || item.ruc || '';
             const matchesSearch =
                 !query ||
                 item.nombre.toLowerCase().includes(query) ||
                 item.codigo.toLowerCase().includes(query) ||
                 item.direccion.toLowerCase().includes(query) ||
                 (item.telefono && item.telefono.toLowerCase().includes(query)) ||
-                (item.ruc && item.ruc.includes(query)) ||
+                (rucNum && rucNum.includes(query)) ||
                 (item.email && item.email.toLowerCase().includes(query)) ||
                 (item.razonSocial && item.razonSocial.toLowerCase().includes(query));
 
@@ -247,7 +250,7 @@ export default function TableSucursales({ sucursales }: TableSucursalesProps) {
                 accessorKey: 'ruc',
                 header: 'RUC / Fiscal',
                 cell: ({ row }) => {
-                    const ruc = row.original.ruc;
+                    const ruc = row.original.rucEmpresa?.numeroRuc || row.original.ruc;
                     return ruc ? (
                         <span className='text-xs font-medium text-foreground/90'>
                             {ruc}
@@ -329,15 +332,18 @@ export default function TableSucursales({ sucursales }: TableSucursalesProps) {
                                             <CopyIcon className='size-3.5 text-muted-foreground' />
                                             <span>Copiar código</span>
                                         </DropdownMenuItem>
-                                        {sucursal.ruc && (
-                                            <DropdownMenuItem
-                                                onClick={() => copyToClipboard(sucursal.ruc!, 'RUC')}
-                                                className='cursor-pointer gap-2 text-xs'
-                                            >
-                                                <FileTextIcon className='size-3.5 text-muted-foreground' />
-                                                <span>Copiar RUC</span>
-                                            </DropdownMenuItem>
-                                        )}
+                                        {(() => {
+                                            const rucVal = sucursal.rucEmpresa?.numeroRuc || sucursal.ruc;
+                                            return rucVal ? (
+                                                <DropdownMenuItem
+                                                    onClick={() => copyToClipboard(rucVal, 'RUC')}
+                                                    className='cursor-pointer gap-2 text-xs'
+                                                >
+                                                    <FileTextIcon className='size-3.5 text-muted-foreground' />
+                                                    <span>Copiar RUC</span>
+                                                </DropdownMenuItem>
+                                            ) : null;
+                                        })()}
                                     </DropdownMenuGroup>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuGroup>
@@ -937,6 +943,7 @@ export default function TableSucursales({ sucursales }: TableSucursalesProps) {
                     setEditingSucursal(null);
                 }}
                 sucursalToEdit={editingSucursal}
+                initialRucs={rucs}
             />
         </>
     );

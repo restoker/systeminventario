@@ -5,6 +5,7 @@ import { users } from "./auth-schema";
 import { caja } from "./caja";
 import { proveedor } from "./proveedor";
 import { sucursal } from "./sucursal";
+import { rucEmpresa } from "./ruc";
 
 export const EstadoCompra = pgEnum("estado_compra", ["pagado", "pendiente"]);
 // export const estadoEgresoEnum = pgEnum("estado_egreso", ["activo", "anulado"]);
@@ -21,4 +22,8 @@ export const compra = coreTable('compra', {
     cajaId: text('cajaId').notNull().references(() => caja.id),
     proveedorId: text('proveedorId').references(() => proveedor.id).notNull(),
     sucursalId: text('sucursalId').notNull().references(() => sucursal.id),
+    rucId: text('ruc_id').references(() => rucEmpresa.id),
 })
+
+export type Compra = typeof compra.$inferSelect;
+export type NewCompra = typeof compra.$inferInsert;

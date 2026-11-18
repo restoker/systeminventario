@@ -9,7 +9,14 @@ export interface Sucursal {
     direccion: string;
     activo: boolean | null;
     razonSocial: string | null;
-    ruc: string | null;
+    rucId: string | null;
+    ruc?: string | null;
+    rucEmpresa?: {
+        id?: string;
+        numeroRuc: string;
+        nombre?: string;
+        razonSocial?: string | null;
+    } | null;
     stocks?: {
         id: string;
         cantidad: number;

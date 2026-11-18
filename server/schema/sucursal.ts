@@ -1,5 +1,6 @@
 import { coreTable } from "./communityShieldColumns";
 import { text, boolean } from "drizzle-orm/pg-core";
+import { rucEmpresa } from "./ruc";
 
 export const sucursal = coreTable("sucursal", {
     nombre: text('nombre').notNull(),
@@ -7,9 +8,9 @@ export const sucursal = coreTable("sucursal", {
     telefono: text('telefono').notNull(),
     codigo: text('codigo').unique().notNull(),
     email: text('email'),
-    ruc: text('ruc'),
     razonSocial: text('razon_social'),
     activo: boolean('activo').default(true),
+    rucId: text('ruc_id').references(() => rucEmpresa.id),
 });
 
 export type Sucursal = typeof sucursal.$inferSelect;

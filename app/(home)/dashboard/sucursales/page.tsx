@@ -11,7 +11,8 @@ export default async function SucursalesPage() {
     const sucursales = await db.query.sucursal.findMany({
         orderBy: { createdAt: 'desc' },
         with: {
-            stocks: true
+            stocks: true,
+            rucEmpresa: true,
         }
     });
 

@@ -7,6 +7,7 @@ export const newSucursalSchema = z.object({
     direccion: z.string().min(3, "La dirección debe tener al menos 3 caracteres"),
     telefono: z.string().optional(),
     email: z.string().or(z.literal('')).optional(),
+    rucId: z.string().or(z.literal('')).optional(),
     ruc: z.string().optional(),
     razonSocial: z.string().optional(),
     isActive: z.boolean().optional(),

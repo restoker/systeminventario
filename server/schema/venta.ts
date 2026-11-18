@@ -5,6 +5,7 @@ import { comprobante } from "./comprobante";
 import { caja } from "./caja";
 import { tipoPago } from "./tipo-pago";
 import { users } from "./auth-schema";
+import { rucEmpresa } from "./ruc";
 
 export const venta = coreTable("ventas", {
     cliente: text("cliente"), //nombre del cliente, cuando sea persona natural, si es empresa se guarda el nombre de la empresa
@@ -22,6 +23,7 @@ export const venta = coreTable("ventas", {
     comprobanteId: text("comprobante_id").references(() => comprobante.id),
     cajaId: text("caja_id").references(() => caja.id).notNull(),
     vendedor: text("vendedor").references(() => users.id).notNull(),
+    rucId: text("ruc_id").references(() => rucEmpresa.id),
 })
 
 export type Venta = typeof venta.$inferSelect;

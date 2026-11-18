@@ -1,0 +1,3 @@
+ALTER TABLE "sucursal" RENAME COLUMN "ruc" TO "ruc_id";--> statement-breakpoint
+ALTER TABLE "sucursal" RENAME CONSTRAINT "sucursal_ruc_ruc_empresa_numero_ruc_fkey" TO "sucursal_ruc_id_ruc_empresa_id_fkey";--> statement-breakpoint
+ALTER TABLE "sucursal" DROP CONSTRAINT "sucursal_ruc_id_ruc_empresa_id_fkey", ADD CONSTRAINT "sucursal_ruc_id_ruc_empresa_id_fkey" FOREIGN KEY ("ruc_id") REFERENCES "ruc_empresa"("id");

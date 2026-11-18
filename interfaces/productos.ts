@@ -9,7 +9,7 @@ export interface Productos {
     description: string;
     precioCompra: number | null;
     precioVenta: number;
-    igv: number | null;
+    igv?: number | null;
     enConsignacion: boolean | null;
     nota: string | null;
     categoryId: string;

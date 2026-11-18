@@ -3,6 +3,7 @@ import db from "@/server";
 import { igv } from "@/server/schema/igv";
 import { tipoDocumento } from "@/server/schema/tipo-documento";
 import { configuracion } from "@/server/schema/configuracion";
+import { rucEmpresa } from "@/server/schema/ruc";
 import ConfiguracionClient from "./_ui/ConfiguracionClient";
 
 export const dynamic = 'force-dynamic';
@@ -51,6 +52,11 @@ export default async function ConfiguracionPage() {
         config = defaultConfig;
     }
 
+    // 4. Obtener RUCs de la empresa (Multi-RUC)
+    const rucs = await db.query.rucEmpresa.findMany({
+        orderBy: (r, { desc, asc }) => [desc(r.esPrincipal), asc(r.nombre)],
+    });
+
     return (
         <SidebarAux>
             <div className='p-4 sm:p-6 lg:p-8 w-full'>
@@ -58,6 +64,7 @@ export default async function ConfiguracionPage() {
                     initialIgv={currentIgv}
                     initialTiposDocumento={docs}
                     initialConfiguracion={config}
+                    initialRucs={rucs}
                 />
             </div>
         </SidebarAux>

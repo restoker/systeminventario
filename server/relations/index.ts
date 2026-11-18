@@ -25,8 +25,9 @@ import { usuarioSucursal } from "../schema/usuario-sucursal";
 import { compra } from "../schema/compras";
 import { productosCompras } from "../schema/producto-compra";
 import { egresos } from "../schema/egreso";
+import { rucEmpresa } from "../schema/ruc";
 
-export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta, productoVenta, devolucion, kardex, igv, imagenProducto, tipoDocumento, comision, configuracion, caja, comprobante, usuarioSucursal, compra, productosCompras, egresos }, (r) => ({
+export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta, productoVenta, devolucion, kardex, igv, imagenProducto, tipoDocumento, comision, configuracion, caja, comprobante, usuarioSucursal, compra, productosCompras, egresos, rucEmpresa }, (r) => ({
     users: {
         // 1:N — sesiones de Better Auth del usuario.
         sessions: r.many.sessions({
@@ -193,6 +194,10 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
             from: r.sucursal.id,
             to: r.devolucion.sucursalId,
         }),
+        rucEmpresa: r.one.rucEmpresa({
+            from: r.sucursal.rucId,
+            to: r.rucEmpresa.id,
+        }),
     },
     // Caja: pertenece a UN usuario y a UNA sucursal; agrupa muchas ventas.
     caja: {
@@ -239,6 +244,11 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
         comprobante: r.one.comprobante({
             from: r.venta.comprobanteId,
             to: r.comprobante.id,
+        }),
+        // Opcional: RUC de la empresa con el que se facturó la venta
+        rucEmpresa: r.one.rucEmpresa({
+            from: r.venta.rucId,
+            to: r.rucEmpresa.id,
         }),
         productos: r.many.productoVenta({
             from: r.venta.id,
@@ -287,9 +297,29 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
             from: r.comprobante.createdByUserId,
             to: r.users.id,
         }),
+        // RUC de la empresa emisor del comprobante
+        rucEmpresa: r.one.rucEmpresa({
+            from: r.comprobante.rucId,
+            to: r.rucEmpresa.id,
+        }),
         ventas: r.many.venta({ //TODO: ⚠️ revisar esta relacion, ya que solamente se puede emitir un comprobante por venta, no muchas.
             from: r.comprobante.id,
             to: r.venta.comprobanteId,
+        }),
+    },
+    // Tipo de comprobante (series y numeración, opcionalmente asignado a un RUC específico)
+    tipoComprobante: {
+        rucEmpresa: r.one.rucEmpresa({
+            from: r.tipoComprobante.rucId,
+            to: r.rucEmpresa.id,
+        }),
+        comprobantes: r.many.comprobante({
+            from: r.tipoComprobante.id,
+            to: r.comprobante.tipoComprobanteId,
+        }),
+        compras: r.many.compra({
+            from: r.tipoComprobante.id,
+            to: r.compra.tipoComprobanteId,
         }),
     },
     // Comisión: pertenece a UN vendedor.
@@ -397,6 +427,11 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
             from: r.compra.sucursalId,
             to: r.sucursal.id,
         }),
+        // RUC de la empresa a cuyo nombre se realizó la compra
+        rucEmpresa: r.one.rucEmpresa({
+            from: r.compra.rucId,
+            to: r.rucEmpresa.id,
+        }),
         productosCompras: r.many.productosCompras({
             from: r.compra.id,
             to: r.productosCompras.compraId,
@@ -420,6 +455,34 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
         creadoPor: r.one.users({
             from: r.egresos.createdByUserId,
             to: r.users.id,
+        }),
+    },
+    // RUC Empresa (Multi-RUC / Facturación flexible a múltiples razones sociales)
+    rucEmpresa: {
+        // Sucursales que tienen este RUC como predeterminado
+        sucursales: r.many.sucursal({
+            from: r.rucEmpresa.id,
+            to: r.sucursal.rucId,
+        }),
+        // Comprobantes emitidos bajo este RUC (elección del usuario al facturar)
+        comprobantes: r.many.comprobante({
+            from: r.rucEmpresa.id,
+            to: r.comprobante.rucId,
+        }),
+        // Ventas registradas a nombre de este RUC
+        ventas: r.many.venta({
+            from: r.rucEmpresa.id,
+            to: r.venta.rucId,
+        }),
+        // Series y numeraciones asignadas a este RUC (ej. F001, B001)
+        tiposComprobante: r.many.tipoComprobante({
+            from: r.rucEmpresa.id,
+            to: r.tipoComprobante.rucId,
+        }),
+        // Compras de mercadería deducidas para este RUC (crédito fiscal)
+        compras: r.many.compra({
+            from: r.rucEmpresa.id,
+            to: r.compra.rucId,
         }),
     },
 }));

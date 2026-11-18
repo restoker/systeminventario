@@ -25,6 +25,7 @@ import { imagenProducto } from "./imagen-producto";
 import { comision } from "./comision";
 import { configuracion } from "./configuracion";
 import { usuarioSucursal } from "./usuario-sucursal";
+import { rucEmpresa } from "./ruc";
 
 export default {
     users,
@@ -68,5 +69,5 @@ export default {
     comision,
     configuracion,
     usuarioSucursal,
-
+    rucEmpresa,
 }

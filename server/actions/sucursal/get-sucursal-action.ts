@@ -7,6 +7,9 @@ export const getSucursalAction = async (id: string) => {
     const sucursal = await db.query.sucursal.findFirst({
       where: {
         id: id
+      },
+      with: {
+        rucEmpresa: true,
       }
     });
     if (!sucursal) return { ok: false, msg: 'Sucursal no encontrada', data: null };

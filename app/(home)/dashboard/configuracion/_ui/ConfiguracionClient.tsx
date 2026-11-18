@@ -13,6 +13,10 @@ import {
     IdCard,
     BadgePercent,
     Calculator,
+    Star,
+    Copy,
+    MapPin,
+    ShieldCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAction } from 'next-safe-action/hooks';
@@ -28,7 +32,14 @@ import {
     toggleTipoDocumentoAction,
     deleteTipoDocumentoAction,
 } from '@/server/actions/tipo-documento/tipo-documento-actions';
+import {
+    toggleRucEmpresaAction,
+    setRucPrincipalAction,
+    deleteRucEmpresaAction,
+} from '@/server/actions/ruc/ruc-actions';
 import ModalNewTipoDocumento from './ModalNewTipoDocumento';
+import ModalNewRucEmpresa from './ModalNewRucEmpresa';
+import type { RucEmpresa } from '@/server/schema/ruc';
 
 interface TipoDocItem {
     id: string;
@@ -49,30 +60,99 @@ interface Props {
         recargoTarjeta: number;
         comisionVendedor: number;
     } | null;
+    initialRucs?: RucEmpresa[];
 }
 
 export default function ConfiguracionClient({
     initialIgv,
     initialTiposDocumento,
     initialConfiguracion,
+    initialRucs = [],
 }: Props) {
     // 1. Estado para el IGV
     const [igvValue, setIgvValue] = useState<number>(initialIgv?.value ?? 0.18);
     const [igvActive, setIgvActive] = useState<boolean>(initialIgv?.isActive ?? true);
 
-    // 2. Estado para el listado de tipos de documento
+    // 2. Estado para RUCs de la empresa (Multi-RUC)
+    const [rucs, setRucs] = useState<RucEmpresa[]>(initialRucs);
+    const [selectedRucId, setSelectedRucId] = useState<string>(
+        initialRucs.find((r) => r.esPrincipal)?.id || initialRucs[0]?.id || ''
+    );
+    const [isModalRucOpen, setIsModalRucOpen] = useState(false);
+
+    // RUC seleccionado actual
+    const selectedRuc = rucs.find((r) => r.id === selectedRucId) || rucs[0] || null;
+
+    // 3. Estado para el listado de tipos de documento
     const [documentos, setDocumentos] = useState<TipoDocItem[]>(initialTiposDocumento);
     const [isModalDocOpen, setIsModalDocOpen] = useState(false);
 
-    // 3. Estado para el recargo por pago con tarjeta
+    // 4. Estado para el recargo por pago con tarjeta
     const [recargoTarjeta, setRecargoTarjeta] = useState<number>(
         initialConfiguracion?.recargoTarjeta ?? 0.05
     );
 
-    // 4. Estado para la comisión del vendedor
+    // 5. Estado para la comisión del vendedor
     const [comisionVendedor, setComisionVendedor] = useState<number>(
         initialConfiguracion?.comisionVendedor ?? 0.03
     );
+
+    // Acciones del servidor: RUC Empresa
+    const { execute: executeToggleRuc } = useAction(toggleRucEmpresaAction, {
+        onSuccess: ({ data }) => {
+            if (data?.ok) toast.success(data.msg);
+            else if (data?.msg) toast.error(data.msg);
+        },
+        onError: () => toast.error('Error al actualizar el estado del RUC'),
+    });
+
+    const { execute: executeSetPrincipal } = useAction(setRucPrincipalAction, {
+        onSuccess: ({ data }) => {
+            if (data?.ok) toast.success(data.msg);
+            else if (data?.msg) toast.error(data.msg);
+        },
+        onError: () => toast.error('Error al cambiar el RUC principal'),
+    });
+
+    const { execute: executeDeleteRuc } = useAction(deleteRucEmpresaAction, {
+        onSuccess: ({ data }) => {
+            if (data?.ok) toast.success(data.msg);
+            else if (data?.msg) toast.error(data.msg);
+        },
+        onError: () => toast.error('Error al eliminar el RUC'),
+    });
+
+    // Manejadores para RUCs
+    const handleToggleRuc = (id: string, nuevoEstado: boolean) => {
+        setRucs((prev) =>
+            prev.map((r) => (r.id === id ? { ...r, activo: nuevoEstado } : r))
+        );
+        executeToggleRuc({ id, activo: nuevoEstado });
+    };
+
+    const handleSetPrincipal = (id: string) => {
+        setRucs((prev) =>
+            prev.map((r) => ({ ...r, esPrincipal: r.id === id, activo: r.id === id ? true : r.activo }))
+        );
+        executeSetPrincipal({ id });
+    };
+
+    const handleDeleteRuc = (id: string, numeroRuc: string) => {
+        if (!confirm(`¿Estás seguro de eliminar el RUC ${numeroRuc}?`)) return;
+        setRucs((prev) => {
+            const next = prev.filter((r) => r.id !== id);
+            if (selectedRucId === id) {
+                setSelectedRucId(next[0]?.id || '');
+            }
+            return next;
+        });
+        executeDeleteRuc({ id });
+    };
+
+    const handleCopy = (text: string, label: string) => {
+        navigator.clipboard.writeText(text);
+        toast.success(`${label} copiado al portapapeles`);
+    };
 
     // Acciones del servidor
     const { execute: executeIgv, status: statusIgv } = useAction(newIgvAction, {
@@ -258,7 +338,234 @@ export default function ConfiguracionClient({
                 </div>
             </section>
 
-            {/* SECCIÓN 2: TIPOS DE DOCUMENTO (USANDO PATRÓN LIST-02 / NOTIFICATIONS) */}
+            {/* SECCIÓN 2: RAZÓN SOCIAL Y RUCS EMISORES (MULTI-RUC) */}
+            <section className="rounded-xl border border-black/10 bg-white p-5 sm:p-6 shadow-xs dark:border-white/10 dark:bg-white/2 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-black/5 dark:border-white/5">
+                    <div className="flex items-center gap-3">
+                        <div className="flex size-9 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                            <Building2 className="size-5" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+                                    Razón Social y RUCs Emisores (Multi-RUC)
+                                </h2>
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 font-bold">
+                                    {rucs.length} {rucs.length === 1 ? 'RUC registrado' : 'RUCs registrados'}
+                                </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Administra las empresas y RUCs con los que tu negocio emite comprobantes de pago ante SUNAT.
+                            </p>
+                        </div>
+                    </div>
+
+                    <Button
+                        onClick={() => setIsModalRucOpen(true)}
+                        className="gap-2 self-start sm:self-auto text-xs font-semibold cursor-pointer shadow-xs"
+                    >
+                        <Plus className="size-4" />
+                        <span>Agregar RUC</span>
+                    </Button>
+                </div>
+
+                {/* Listado / Selección de RUCs */}
+                {rucs.length === 0 ? (
+                    <div className="rounded-lg border-2 border-dashed border-border/80 p-8 text-center space-y-3">
+                        <div className="mx-auto size-10 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground">
+                            <Building2 className="size-5" />
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium text-foreground">No hay RUCs registrados en el sistema</p>
+                            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                                Agrega los RUCs y razones sociales de tus empresas para emitir boletas, facturas y tickets desde cualquier sucursal.
+                            </p>
+                        </div>
+                        <Button
+                            size="sm"
+                            onClick={() => setIsModalRucOpen(true)}
+                            className="gap-1.5 text-xs font-semibold cursor-pointer"
+                        >
+                            <Plus className="size-3.5" />
+                            <span>Registrar Primer RUC</span>
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+                        {/* Columna Izquierda: Select de RUCs y Controles de Estado */}
+                        <div className="md:col-span-6 space-y-4">
+                            <div className="space-y-2">
+                                <label
+                                    htmlFor="select-ruc-empresa"
+                                    className="block text-xs font-semibold uppercase tracking-wider text-black/70 dark:text-white/70"
+                                >
+                                    Seleccionar RUC para Consultar o Editar
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        id="select-ruc-empresa"
+                                        value={selectedRuc?.id || ''}
+                                        onChange={(e) => setSelectedRucId(e.target.value)}
+                                        className="w-full rounded-lg border border-black/15 bg-white px-3.5 py-2.5 text-xs font-medium text-black focus:border-[#FC7819] focus:outline-hidden focus:ring-1 focus:ring-[#FC7819] dark:border-white/15 dark:bg-neutral-900 dark:text-white transition-colors cursor-pointer"
+                                    >
+                                        {rucs.map((r) => (
+                                            <option key={r.id} value={r.id}>
+                                                {r.numeroRuc} — {r.nombre || r.razonSocial} {r.esPrincipal ? '★ (Principal)' : ''} {!r.activo ? '(Inactivo)' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <p className="text-[11px] text-muted-foreground">
+                                    Elige un RUC del menú desplegable para revisar sus datos fiscales, cambiar su estado o establecerlo como predeterminado.
+                                </p>
+                            </div>
+
+                            {/* Acciones Rápidas sobre el RUC seleccionado */}
+                            {selectedRuc && (
+                                <div className="rounded-lg border border-border/70 bg-muted/20 p-3.5 space-y-3 text-xs">
+                                    {/* Control RUC Principal */}
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <span className="font-semibold text-foreground flex items-center gap-1.5">
+                                                <Star className={`size-3.5 ${selectedRuc.esPrincipal ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground'}`} />
+                                                <span>RUC Principal del Negocio</span>
+                                            </span>
+                                            <span className="text-[11px] text-muted-foreground block">
+                                                {selectedRuc.esPrincipal
+                                                    ? 'Este RUC es el predeterminado para ventas nuevas en el POS.'
+                                                    : 'Haz clic en el botón para que sea el RUC por defecto del negocio.'}
+                                            </span>
+                                        </div>
+                                        {!selectedRuc.esPrincipal && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="xs"
+                                                onClick={() => handleSetPrincipal(selectedRuc.id)}
+                                                className="h-7 text-[11px] font-semibold gap-1 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 cursor-pointer shrink-0"
+                                            >
+                                                <Star className="size-3" />
+                                                <span>Hacer Principal</span>
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    <div className="border-t border-border/50 pt-2.5 flex items-center justify-between gap-3">
+                                        <div>
+                                            <span className="font-semibold text-foreground block">
+                                                Habilitado para Facturación
+                                            </span>
+                                            <span className="text-[11px] text-muted-foreground block">
+                                                {selectedRuc.activo
+                                                    ? 'Aparece como opción disponible al cobrar en caja.'
+                                                    : 'Oculto en el selector de comprobantes de ventas.'}
+                                            </span>
+                                        </div>
+                                        <Switch
+                                            checked={selectedRuc.activo}
+                                            onCheckedChange={(checked) => handleToggleRuc(selectedRuc.id, checked)}
+                                            aria-label={`Alternar estado de ${selectedRuc.numeroRuc}`}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Columna Derecha: Ficha Tributaria del RUC Seleccionado */}
+                        <div className="md:col-span-6">
+                            {selectedRuc ? (
+                                <div className="rounded-xl border border-border/80 bg-muted/15 p-4 sm:p-5 space-y-3.5 shadow-2xs">
+                                    {/* Header de la Ficha */}
+                                    <div className="flex items-start justify-between gap-3 pb-3 border-b border-border/60">
+                                        <div className="min-w-0">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                                                Ficha Tributaria Oficial
+                                            </span>
+                                            <h3 className="text-base font-bold text-foreground truncate mt-0.5">
+                                                {selectedRuc.razonSocial || selectedRuc.nombre}
+                                            </h3>
+                                            {selectedRuc.nombre && selectedRuc.nombre !== selectedRuc.razonSocial && (
+                                                <span className="text-xs text-muted-foreground block truncate">
+                                                    Alias / Comercial: <strong>{selectedRuc.nombre}</strong>
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1 shrink-0">
+                                            {selectedRuc.esPrincipal && (
+                                                <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800 text-[10px] font-bold gap-1">
+                                                    <Star className="size-2.5 fill-current" />
+                                                    <span>Principal</span>
+                                                </Badge>
+                                            )}
+                                            <Badge
+                                                variant="outline"
+                                                className={`text-[10px] font-semibold ${selectedRuc.activo ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25' : 'bg-muted text-muted-foreground'}`}
+                                            >
+                                                {selectedRuc.activo ? 'Activo SUNAT' : 'Inactivo'}
+                                            </Badge>
+                                        </div>
+                                    </div>
+
+                                    {/* Datos en Fila */}
+                                    <div className="space-y-2.5 text-xs">
+                                        {/* RUC */}
+                                        <div className="flex items-center justify-between py-1 border-b border-border/40">
+                                            <span className="text-muted-foreground">Número de RUC:</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="font-mono font-bold text-foreground text-sm tracking-wide">
+                                                    {selectedRuc.numeroRuc}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCopy(selectedRuc.numeroRuc, 'RUC')}
+                                                    title="Copiar RUC"
+                                                    className="size-6 inline-flex items-center justify-center rounded hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                                                >
+                                                    <Copy className="size-3" />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Dirección Fiscal */}
+                                        <div className="flex items-start justify-between py-1 border-b border-border/40 gap-3">
+                                            <span className="text-muted-foreground shrink-0 flex items-center gap-1">
+                                                <MapPin className="size-3" /> Dirección:
+                                            </span>
+                                            <span className="text-right text-foreground font-medium">
+                                                {selectedRuc.direccionFiscal || 'No registrada en ficha'}
+                                            </span>
+                                        </div>
+
+                                        {/* Contacto / Correo */}
+                                        {(selectedRuc.telefono || selectedRuc.email) && (
+                                            <div className="flex items-center justify-between py-1 border-b border-border/40 gap-3">
+                                                <span className="text-muted-foreground shrink-0">Contacto:</span>
+                                                <span className="text-right text-foreground font-mono text-[11px]">
+                                                    {[selectedRuc.telefono, selectedRuc.email].filter(Boolean).join(' · ')}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Botón Eliminar si no tiene registros vinculados */}
+                                    <div className="pt-2 flex justify-end">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteRuc(selectedRuc.id, selectedRuc.numeroRuc)}
+                                            className="text-xs text-muted-foreground hover:text-red-500 flex items-center gap-1 cursor-pointer transition-colors"
+                                        >
+                                            <Trash2 className="size-3" />
+                                            <span>Eliminar RUC</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : null}
+                        </div>
+                    </div>
+                )}
+            </section>
+
+            {/* SECCIÓN 3: TIPOS DE DOCUMENTO (USANDO PATRÓN LIST-02 / NOTIFICATIONS) */}
             <section className="rounded-xl border border-black/10 bg-white p-5 sm:p-6 shadow-xs dark:border-white/10 dark:bg-white/2 space-y-5">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-black/5 dark:border-white/5">
                     <div className="flex items-center gap-3">
@@ -532,6 +839,26 @@ export default function ConfiguracionClient({
                     setDocumentos((prev) => [newDoc, ...prev]);
                 }}
             />
+
+            {/* Modal para registrar nuevo RUC de empresa */}
+            {isModalRucOpen && (
+                <ModalNewRucEmpresa
+                    isOpen={isModalRucOpen}
+                    onClose={() => setIsModalRucOpen(false)}
+                    onSuccess={(newRuc) => {
+                        setRucs((prev) => {
+                            const updated = [newRuc, ...prev];
+                            if (newRuc.esPrincipal) {
+                                return updated.map((r) =>
+                                    r.id === newRuc.id ? r : { ...r, esPrincipal: false }
+                                );
+                            }
+                            return updated;
+                        });
+                        setSelectedRucId(newRuc.id);
+                    }}
+                />
+            )}
         </div>
     );
 }
