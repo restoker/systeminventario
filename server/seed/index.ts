@@ -2,11 +2,13 @@ import { seedTiposPago, SeedOptions } from "./tipo-pago-seed";
 import { seedTiposComprobante } from "./tipo-comprobante-seed";
 import { seedUsuarios } from "./usuarios-seed";
 import { seedIgv } from "./igv-seed";
+import { seedRucs } from "./ruc-seed";
 
 export * from "./tipo-pago-seed";
 export * from "./tipo-comprobante-seed";
 export * from "./usuarios-seed";
 export * from "./igv-seed";
+export * from "./ruc-seed";
 
 export type { SeedOptions };
 
@@ -17,10 +19,11 @@ export type { SeedOptions };
  * antes de insertar la data del seed para asegurar un estado fresco y libre de conflictos.
  *
  * Ejecuta de forma secuencial la siembra de:
- * 1. Tipos de Pago (Efectivo, Tarjeta, PLIN, YAPE, Depósito, Falta pagar)
- * 2. Tipos de Comprobante (Factura, Boleta, Ticket, Liquidación de Compra, Sin Comprobante)
- * 3. Usuarios base (Admin y Vendedor)
- * 4. Tasas de IGV (18% Régimen General, 10% MYPE, 0% Exonerado / Inafecto)
+ * 1. RUCs de la Empresa (Multi-RUC emisor para facturación electrónica)
+ * 2. Tipos de Pago (Efectivo, Tarjeta, PLIN, YAPE, Depósito, Falta pagar)
+ * 3. Tipos de Comprobante (Factura, Boleta, Ticket, Liquidación de Compra, Sin Comprobante)
+ * 4. Usuarios base (Admin y Vendedor)
+ * 5. Tasas de IGV (18% Régimen General, 10% MYPE, 0% Exonerado / Inafecto)
  *
  * Puedes agregar más seeds creando su archivo respectivo y llamándolo aquí.
  */
@@ -29,6 +32,7 @@ export const runAllSeeds = async (options: SeedOptions = { clean: true }) => {
     console.log(`🌱 [Seeds] Iniciando ejecución de seeds de la base de datos (Limpiar data anterior: ${isClean ? 'SÍ' : 'NO'})...\n`);
 
     const results = {
+        rucs: await seedRucs({ clean: isClean }),
         tiposPago: await seedTiposPago({ clean: isClean }),
         tiposComprobante: await seedTiposComprobante({ clean: isClean }),
         usuarios: await seedUsuarios({ clean: isClean }),

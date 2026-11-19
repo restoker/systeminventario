@@ -18,6 +18,13 @@ export const updateStockMinimoAction = actionClient
                 return { ok: false, msg: 'No autorizado para realizar esta acción.' };
             }
 
+            if (session.user.role !== 'admin') {
+                return {
+                    ok: false,
+                    msg: 'Permiso denegado: Solo los administradores pueden modificar el stock mínimo.',
+                };
+            }
+
             const { sucursalId, productoId, stockMinimo } = parsedInput;
 
             const [existing] = await db

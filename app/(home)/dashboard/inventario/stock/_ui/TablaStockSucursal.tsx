@@ -195,6 +195,7 @@ export default function TablaStockSucursal({
 
     // Manejadores para abrir modales con un producto específico
     const handleOpenAjuste = (item?: StockItemRow) => {
+        if (!isAdmin) return;
         if (item) {
             setSelectedProduct({
                 productoId: item.productoId,
@@ -229,6 +230,7 @@ export default function TablaStockSucursal({
     };
 
     const handleOpenMinimo = (item: StockItemRow) => {
+        if (!isAdmin) return;
         setSelectedProduct({
             productoId: item.productoId,
             nombre: item.nombre,
@@ -333,16 +335,26 @@ export default function TablaStockSucursal({
                                 </span>
                             </div>
                             <div className="flex justify-end mt-1">
-                                <button
-                                    type="button"
-                                    onClick={() => handleOpenMinimo(item)}
-                                    title={`Clic para modificar umbral de stock mínimo (Actual: ${item.stockMinimo} ${item.unidad})`}
-                                    className="group inline-flex items-center gap-1 rounded-md border border-border/80 bg-muted/40 hover:bg-primary/10 hover:border-primary/50 hover:text-primary px-1.5 py-0.5 text-[11px] font-mono text-muted-foreground transition-all cursor-pointer shadow-2xs"
-                                >
-                                    <ShieldAlert className="size-3 text-amber-500/90 group-hover:text-amber-500 shrink-0" />
-                                    <span>Mín: <strong className="text-foreground group-hover:text-primary">{item.stockMinimo}</strong></span>
-                                    <Pencil className="size-2.5 text-muted-foreground/60 group-hover:text-primary shrink-0 transition-transform group-hover:scale-110 ml-0.5" />
-                                </button>
+                                {isAdmin ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleOpenMinimo(item)}
+                                        title={`Clic para modificar umbral de stock mínimo (Actual: ${item.stockMinimo} ${item.unidad})`}
+                                        className="group inline-flex items-center gap-1 rounded-md border border-border/80 bg-muted/40 hover:bg-primary/10 hover:border-primary/50 hover:text-primary px-1.5 py-0.5 text-[11px] font-mono text-muted-foreground transition-all cursor-pointer shadow-2xs"
+                                    >
+                                        <ShieldAlert className="size-3 text-amber-500/90 group-hover:text-amber-500 shrink-0" />
+                                        <span>Mín: <strong className="text-foreground group-hover:text-primary">{item.stockMinimo}</strong></span>
+                                        <Pencil className="size-2.5 text-muted-foreground/60 group-hover:text-primary shrink-0 transition-transform group-hover:scale-110 ml-0.5" />
+                                    </button>
+                                ) : (
+                                    <span
+                                        title={`Umbral de stock mínimo: ${item.stockMinimo} ${item.unidad}`}
+                                        className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-1.5 py-0.5 text-[11px] font-mono text-muted-foreground"
+                                    >
+                                        <ShieldAlert className="size-3 text-amber-500/80 shrink-0" />
+                                        <span>Mín: <strong className="text-foreground">{item.stockMinimo}</strong></span>
+                                    </span>
+                                )}
                             </div>
                         </div>
                     );
@@ -430,19 +442,21 @@ export default function TablaStockSucursal({
 
                     return (
                         <div className="flex items-center justify-end gap-1.5">
-                            {/* Botón Ajustar */}
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleOpenAjuste(item)}
-                                className="h-7 px-2 text-xs font-medium gap-1 text-foreground hover:bg-muted cursor-pointer"
-                                title="Realizar ajuste físico de stock"
-                            >
-                                <SlidersHorizontal className="size-3 text-primary" />
-                                <span className="hidden sm:inline">Ajustar</span>
-                            </Button>
+                            {/* Botón Ajustar (Solo Administradores) */}
+                            {isAdmin && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleOpenAjuste(item)}
+                                    className="h-7 px-2 text-xs font-medium gap-1 text-foreground hover:bg-muted cursor-pointer"
+                                    title="Realizar ajuste físico de stock"
+                                >
+                                    <SlidersHorizontal className="size-3 text-primary" />
+                                    <span className="hidden sm:inline">Ajustar</span>
+                                </Button>
+                            )}
 
-                            {/* Botón Trasladar */}
+                            {/* Botón Trasladar (Administradores y Vendedores) */}
                             <Button
                                 size="sm"
                                 variant="outline"
@@ -459,38 +473,42 @@ export default function TablaStockSucursal({
                                 <span className="hidden sm:inline">Trasladar</span>
                             </Button>
 
-                            {/* Botón Stock Mínimo */}
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleOpenMinimo(item)}
-                                className="h-7 px-2 text-xs font-medium gap-1 text-foreground hover:bg-muted hover:border-amber-500/50 hover:text-amber-600 dark:hover:text-amber-400 cursor-pointer"
-                                title={`Configurar umbral de stock mínimo de alerta (Actual: ${item.stockMinimo} ${item.unidad})`}
-                            >
-                                <ShieldAlert className="size-3 text-amber-500 shrink-0" />
-                                <span className="hidden xl:inline">Mínimo</span>
-                            </Button>
+                            {/* Botón Stock Mínimo (Solo Administradores) */}
+                            {isAdmin && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleOpenMinimo(item)}
+                                    className="h-7 px-2 text-xs font-medium gap-1 text-foreground hover:bg-muted hover:border-amber-500/50 hover:text-amber-600 dark:hover:text-amber-400 cursor-pointer"
+                                    title={`Configurar umbral de stock mínimo de alerta (Actual: ${item.stockMinimo} ${item.unidad})`}
+                                >
+                                    <ShieldAlert className="size-3 text-amber-500 shrink-0" />
+                                    <span className="hidden xl:inline">Mínimo</span>
+                                </Button>
+                            )}
 
-                            {/* Botón Reabastecer */}
-                            <Link
-                                href={`/dashboard/inventario/reabastecer?sucursalId=${sucursal.id}&productoId=${item.productoId}`}
-                                title={`Comprar / Reabastecer ${item.nombre}`}
-                                className={buttonVariants({
-                                    variant: 'outline',
-                                    size: 'sm',
-                                    className:
-                                        'h-7 px-2 text-xs font-semibold gap-1 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all cursor-pointer',
-                                })}
-                            >
-                                <PackagePlus className="size-3.5" />
-                                <span className="hidden sm:inline">Reabastecer</span>
-                            </Link>
+                            {/* Botón Reabastecer (Solo Administradores) */}
+                            {isAdmin && (
+                                <Link
+                                    href={`/dashboard/inventario/reabastecer?sucursalId=${sucursal.id}&productoId=${item.productoId}`}
+                                    title={`Comprar / Reabastecer ${item.nombre}`}
+                                    className={buttonVariants({
+                                        variant: 'outline',
+                                        size: 'sm',
+                                        className:
+                                            'h-7 px-2 text-xs font-semibold gap-1 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all cursor-pointer',
+                                    })}
+                                >
+                                    <PackagePlus className="size-3.5" />
+                                    <span className="hidden sm:inline">Reabastecer</span>
+                                </Link>
+                            )}
                         </div>
                     );
                 },
             },
         ],
-        [copiedId, sucursal.id]
+        [copiedId, sucursal.id, isAdmin]
     );
 
     // TanStack Table Instance
@@ -575,39 +593,43 @@ export default function TablaStockSucursal({
                         </div>
                     )}
 
-                    {/* Botón Nuevo Ajuste */}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenAjuste()}
-                        className="h-9 px-3 text-xs font-semibold gap-1.5 cursor-pointer shadow-2xs"
-                    >
-                        <SlidersHorizontal className="size-3.5 text-primary" />
-                        <span>Nuevo Ajuste</span>
-                    </Button>
+                    {/* Botón Nuevo Ajuste (Solo Administradores) */}
+                    {isAdmin && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenAjuste()}
+                            className="h-9 px-3 text-xs font-semibold gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                            <SlidersHorizontal className="size-3.5 text-primary" />
+                            <span>Nuevo Ajuste</span>
+                        </Button>
+                    )}
 
-                    {/* Botón Nuevo Traslado */}
+                    {/* Botón Nuevo Traslado (Administradores y Vendedores) */}
                     <Button
-                        variant="outline"
+                        variant={isAdmin ? 'outline' : 'default'}
                         size="sm"
                         onClick={() => handleOpenTraslado()}
                         className="h-9 px-3 text-xs font-semibold gap-1.5 cursor-pointer shadow-2xs"
                     >
-                        <ArrowRightLeft className="size-3.5 text-blue-500" />
+                        <ArrowRightLeft className={`size-3.5 ${isAdmin ? 'text-blue-500' : ''}`} />
                         <span>Nuevo Traslado</span>
                     </Button>
 
-                    {/* Botón Reabastecer Sucursal */}
-                    <Link
-                        href={`/dashboard/inventario/reabastecer?sucursalId=${sucursal.id}`}
-                        className={buttonVariants({
-                            size: 'sm',
-                            className: 'h-9 px-3.5 text-xs font-semibold gap-1.5 cursor-pointer shadow-sm',
-                        })}
-                    >
-                        <PackagePlus className="size-3.5" />
-                        <span>Reabastecer Sede</span>
-                    </Link>
+                    {/* Botón Reabastecer Sucursal (Solo Administradores) */}
+                    {isAdmin && (
+                        <Link
+                            href={`/dashboard/inventario/reabastecer?sucursalId=${sucursal.id}`}
+                            className={buttonVariants({
+                                size: 'sm',
+                                className: 'h-9 px-3.5 text-xs font-semibold gap-1.5 cursor-pointer shadow-sm',
+                            })}
+                        >
+                            <PackagePlus className="size-3.5" />
+                            <span>Reabastecer Sede</span>
+                        </Link>
+                    )}
                 </div>
             </div>
 
@@ -805,7 +827,9 @@ export default function TablaStockSucursal({
                                         <p className="text-xs text-muted-foreground max-w-sm">
                                             {searchQuery || statusFilter !== 'all' || categoriaFilter !== 'all'
                                                 ? 'Prueba modificando tus filtros o criterio de búsqueda.'
-                                                : 'Realiza un reabastecimiento o ajuste inicial para ingresar mercadería a esta sede.'}
+                                                : isAdmin
+                                                ? 'Realiza un reabastecimiento o ajuste inicial para ingresar mercadería a esta sede.'
+                                                : 'Aún no hay mercadería registrada en esta sucursal. Solicita a un administrador el reabastecimiento inicial.'}
                                         </p>
                                         {searchQuery && (
                                             <Button
@@ -926,15 +950,17 @@ export default function TablaStockSucursal({
             </div>
 
             {/* Modales de Ajuste, Traslado y Stock Mínimo */}
-            <ModalAjusteStock
-                isOpen={isAjusteOpen}
-                onClose={() => setIsAjusteOpen(false)}
-                sucursalId={sucursal.id}
-                sucursalNombre={sucursal.nombre}
-                productos={modalProductList}
-                selectedProduct={selectedProduct}
-                onSuccess={() => router.refresh()}
-            />
+            {isAdmin && (
+                <ModalAjusteStock
+                    isOpen={isAjusteOpen}
+                    onClose={() => setIsAjusteOpen(false)}
+                    sucursalId={sucursal.id}
+                    sucursalNombre={sucursal.nombre}
+                    productos={modalProductList}
+                    selectedProduct={selectedProduct}
+                    onSuccess={() => router.refresh()}
+                />
+            )}
 
             <ModalTrasladoStock
                 isOpen={isTrasladoOpen}
@@ -947,13 +973,15 @@ export default function TablaStockSucursal({
                 onSuccess={() => router.refresh()}
             />
 
-            <ModalStockMinimo
-                isOpen={isMinimoOpen}
-                onClose={() => setIsMinimoOpen(false)}
-                sucursalId={sucursal.id}
-                product={selectedProduct}
-                onSuccess={() => router.refresh()}
-            />
+            {isAdmin && (
+                <ModalStockMinimo
+                    isOpen={isMinimoOpen}
+                    onClose={() => setIsMinimoOpen(false)}
+                    sucursalId={sucursal.id}
+                    product={selectedProduct}
+                    onSuccess={() => router.refresh()}
+                />
+            )}
         </div>
     );
 }

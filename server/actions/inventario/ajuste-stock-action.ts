@@ -20,24 +20,14 @@ export const ajusteStockAction = actionClient
                 return { ok: false, msg: 'No autorizado para realizar esta acción.' };
             }
 
-            const { sucursalId, productoId, tipoOperacion, cantidad, motivo, observacion } = parsedInput;
-
-            // 1. Validar permisos de sucursal según el rol del usuario
-            if (session.user.role === 'saler') {
-                const userSucursal = await db.query.usuarioSucursal.findFirst({
-                    where: {
-                        userId: session.user.id,
-                        sucursalId: sucursalId,
-                    },
-                });
-
-                if (!userSucursal) {
-                    return {
-                        ok: false,
-                        msg: 'Permiso denegado: No tienes asignada esta sucursal.',
-                    };
-                }
+            if (session.user.role !== 'admin') {
+                return {
+                    ok: false,
+                    msg: 'Permiso denegado: Solo los administradores pueden ajustar el stock.',
+                };
             }
+
+            const { sucursalId, productoId, tipoOperacion, cantidad, motivo, observacion } = parsedInput;
 
             // 2. Verificar que la sucursal exista y esté activa
             const sucursalTarget = await db.query.sucursal.findFirst({
