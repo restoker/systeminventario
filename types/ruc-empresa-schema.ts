@@ -35,6 +35,12 @@ export const newRucEmpresaSchema = z.object({
 
 export type NewRucEmpresaInput = z.infer<typeof newRucEmpresaSchema>;
 
+export const updateRucEmpresaSchema = newRucEmpresaSchema.extend({
+    id: z.string().min(1, 'ID es requerido'),
+});
+
+export type UpdateRucEmpresaInput = z.infer<typeof updateRucEmpresaSchema>;
+
 export const toggleRucEmpresaSchema = z.object({
     id: z.string().min(1, 'ID es requerido'),
     activo: z.boolean(),

@@ -17,6 +17,9 @@ import {
     Copy,
     MapPin,
     ShieldCheck,
+    AlertTriangle,
+    Loader2,
+    Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAction } from 'next-safe-action/hooks';
@@ -24,6 +27,17 @@ import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle, 
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogMedia,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
     updateConfiguracionAction,
 } from '@/server/actions/configuracion/configuracion-actions';
@@ -47,6 +61,21 @@ interface TipoDocItem {
     estado: boolean | null;
     createdAt?: Date;
 }
+
+type DeleteTarget =
+    | {
+          type: 'ruc';
+          id: string;
+          numeroRuc: string;
+          razonSocial: string;
+          esPrincipal: boolean;
+      }
+    | {
+          type: 'documento';
+          id: string;
+          nombre: string;
+      }
+    | null;
 
 interface Props {
     initialIgv: {
@@ -79,6 +108,7 @@ export default function ConfiguracionClient({
         initialRucs.find((r) => r.esPrincipal)?.id || initialRucs[0]?.id || ''
     );
     const [isModalRucOpen, setIsModalRucOpen] = useState(false);
+    const [editingRuc, setEditingRuc] = useState<RucEmpresa | null>(null);
 
     // RUC seleccionado actual
     const selectedRuc = rucs.find((r) => r.id === selectedRucId) || rucs[0] || null;
@@ -97,6 +127,9 @@ export default function ConfiguracionClient({
         initialConfiguracion?.comisionVendedor ?? 0.03
     );
 
+    // 6. Estado para diálogo de confirmación de eliminación
+    const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
+
     // Acciones del servidor: RUC Empresa
     const { execute: executeToggleRuc } = useAction(toggleRucEmpresaAction, {
         onSuccess: ({ data }) => {
@@ -114,12 +147,26 @@ export default function ConfiguracionClient({
         onError: () => toast.error('Error al cambiar el RUC principal'),
     });
 
-    const { execute: executeDeleteRuc } = useAction(deleteRucEmpresaAction, {
-        onSuccess: ({ data }) => {
-            if (data?.ok) toast.success(data.msg);
-            else if (data?.msg) toast.error(data.msg);
+    const { execute: executeDeleteRuc, status: statusDeleteRuc } = useAction(deleteRucEmpresaAction, {
+        onSuccess: ({ data, input }) => {
+            if (data?.ok) {
+                toast.success(data.msg);
+                setRucs((prev) => {
+                    const next = prev.filter((r) => r.id !== input.id);
+                    if (selectedRucId === input.id) {
+                        setSelectedRucId(next[0]?.id || '');
+                    }
+                    return next;
+                });
+            } else if (data?.msg) {
+                toast.error(data.msg);
+            }
+            setDeleteTarget(null);
         },
-        onError: () => toast.error('Error al eliminar el RUC'),
+        onError: () => {
+            toast.error('Error al eliminar el RUC');
+            setDeleteTarget(null);
+        },
     });
 
     // Manejadores para RUCs
@@ -137,16 +184,14 @@ export default function ConfiguracionClient({
         executeSetPrincipal({ id });
     };
 
-    const handleDeleteRuc = (id: string, numeroRuc: string) => {
-        if (!confirm(`¿Estás seguro de eliminar el RUC ${numeroRuc}?`)) return;
-        setRucs((prev) => {
-            const next = prev.filter((r) => r.id !== id);
-            if (selectedRucId === id) {
-                setSelectedRucId(next[0]?.id || '');
-            }
-            return next;
+    const handleDeleteRuc = (ruc: RucEmpresa) => {
+        setDeleteTarget({
+            type: 'ruc',
+            id: ruc.id,
+            numeroRuc: ruc.numeroRuc,
+            razonSocial: ruc.razonSocial || ruc.nombre,
+            esPrincipal: ruc.esPrincipal,
         });
-        executeDeleteRuc({ id });
     };
 
     const handleCopy = (text: string, label: string) => {
@@ -179,13 +224,23 @@ export default function ConfiguracionClient({
         onError: () => toast.error('Error al cambiar el estado del documento'),
     });
 
-    const { execute: executeDeleteDoc } = useAction(deleteTipoDocumentoAction, {
-        onSuccess: ({ data }) => {
-            if (data?.ok) toast.success(data.msg);
-            else if (data?.msg) toast.error(data.msg);
+    const { execute: executeDeleteDoc, status: statusDeleteDoc } = useAction(deleteTipoDocumentoAction, {
+        onSuccess: ({ data, input }) => {
+            if (data?.ok) {
+                toast.success(data.msg);
+                setDocumentos((prev) => prev.filter((d) => d.id !== input.id));
+            } else if (data?.msg) {
+                toast.error(data.msg);
+            }
+            setDeleteTarget(null);
         },
-        onError: () => toast.error('Error al eliminar el documento'),
+        onError: () => {
+            toast.error('Error al eliminar el documento');
+            setDeleteTarget(null);
+        },
     });
+
+    const isDeleting = statusDeleteRuc === 'executing' || statusDeleteDoc === 'executing';
 
     // Manejador toggle documento
     const handleToggleDocumento = (id: string, nuevoEstado: boolean) => {
@@ -197,9 +252,20 @@ export default function ConfiguracionClient({
 
     // Manejador eliminar documento
     const handleDeleteDocumento = (id: string, nombre: string) => {
-        if (!confirm(`¿Estás seguro de eliminar el documento "${nombre}"?`)) return;
-        setDocumentos((prev) => prev.filter((d) => d.id !== id));
-        executeDeleteDoc({ id });
+        setDeleteTarget({
+            type: 'documento',
+            id,
+            nombre,
+        });
+    };
+
+    const handleConfirmDelete = () => {
+        if (!deleteTarget || isDeleting) return;
+        if (deleteTarget.type === 'ruc') {
+            executeDeleteRuc({ id: deleteTarget.id });
+        } else {
+            executeDeleteDoc({ id: deleteTarget.id });
+        }
     };
 
     // Obtener ícono contextual según el nombre del documento
@@ -361,7 +427,10 @@ export default function ConfiguracionClient({
                     </div>
 
                     <Button
-                        onClick={() => setIsModalRucOpen(true)}
+                        onClick={() => {
+                            setEditingRuc(null);
+                            setIsModalRucOpen(true);
+                        }}
                         className="gap-2 self-start sm:self-auto text-xs font-semibold cursor-pointer shadow-xs"
                     >
                         <Plus className="size-4" />
@@ -383,7 +452,10 @@ export default function ConfiguracionClient({
                         </div>
                         <Button
                             size="sm"
-                            onClick={() => setIsModalRucOpen(true)}
+                            onClick={() => {
+                                setEditingRuc(null);
+                                setIsModalRucOpen(true);
+                            }}
                             className="gap-1.5 text-xs font-semibold cursor-pointer"
                         >
                             <Plus className="size-3.5" />
@@ -547,16 +619,31 @@ export default function ConfiguracionClient({
                                         )}
                                     </div>
 
-                                    {/* Botón Eliminar si no tiene registros vinculados */}
-                                    <div className="pt-2 flex justify-end">
-                                        <button
+                                    {/* Botones de Edición y Eliminación */}
+                                    <div className="pt-2 flex items-center justify-end gap-2">
+                                        <Button
                                             type="button"
-                                            onClick={() => handleDeleteRuc(selectedRuc.id, selectedRuc.numeroRuc)}
-                                            className="text-xs text-muted-foreground hover:text-red-500 flex items-center gap-1 cursor-pointer transition-colors"
+                                            variant="outline"
+                                            size="xs"
+                                            onClick={() => {
+                                                setEditingRuc(selectedRuc);
+                                                setIsModalRucOpen(true);
+                                            }}
+                                            className="h-7 px-2.5 text-xs gap-1.5 cursor-pointer"
+                                        >
+                                            <Pencil className="size-3" />
+                                            <span>Editar RUC</span>
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="xs"
+                                            onClick={() => handleDeleteRuc(selectedRuc)}
+                                            className="h-7 px-2.5 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1.5 cursor-pointer"
                                         >
                                             <Trash2 className="size-3" />
                                             <span>Eliminar RUC</span>
-                                        </button>
+                                        </Button>
                                     </div>
                                 </div>
                             ) : null}
@@ -840,25 +927,109 @@ export default function ConfiguracionClient({
                 }}
             />
 
-            {/* Modal para registrar nuevo RUC de empresa */}
+            {/* Modal para registrar o editar RUC de empresa */}
             {isModalRucOpen && (
                 <ModalNewRucEmpresa
                     isOpen={isModalRucOpen}
-                    onClose={() => setIsModalRucOpen(false)}
-                    onSuccess={(newRuc) => {
+                    rucToEdit={editingRuc}
+                    onClose={() => {
+                        setIsModalRucOpen(false);
+                        setEditingRuc(null);
+                    }}
+                    onSuccess={(savedRuc) => {
                         setRucs((prev) => {
-                            const updated = [newRuc, ...prev];
-                            if (newRuc.esPrincipal) {
+                            const exists = prev.some((r) => r.id === savedRuc.id);
+                            const updated = exists
+                                ? prev.map((r) => (r.id === savedRuc.id ? savedRuc : r))
+                                : [savedRuc, ...prev];
+                            if (savedRuc.esPrincipal) {
                                 return updated.map((r) =>
-                                    r.id === newRuc.id ? r : { ...r, esPrincipal: false }
+                                    r.id === savedRuc.id ? r : { ...r, esPrincipal: false }
                                 );
                             }
                             return updated;
                         });
-                        setSelectedRucId(newRuc.id);
+                        setSelectedRucId(savedRuc.id);
                     }}
                 />
             )}
+            {/* Diálogo de confirmación para eliminación */}
+            <AlertDialog
+                open={deleteTarget !== null}
+                onOpenChange={(open) => {
+                    if (!open && !isDeleting) {
+                        setDeleteTarget(null);
+                    }
+                }}
+            >
+                <AlertDialogContent className="sm:max-w-md gap-5 p-6">
+                    <AlertDialogHeader className="gap-2">
+                        <AlertDialogMedia className="size-11 rounded-lg bg-destructive/10 text-destructive mb-1 *:[svg:not([class*='size-'])]:size-5">
+                            <AlertTriangle />
+                        </AlertDialogMedia>
+                        <AlertDialogTitle className="text-base font-semibold tracking-tight text-foreground">
+                            {deleteTarget?.type === 'ruc'
+                                ? `¿Eliminar RUC ${deleteTarget.numeroRuc}?`
+                                : deleteTarget?.type === 'documento'
+                                ? `¿Eliminar "${deleteTarget.nombre}"?`
+                                : 'Confirmar eliminación'}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-xs leading-relaxed text-muted-foreground">
+                            {deleteTarget?.type === 'ruc' ? (
+                                <>
+                                    Se eliminará permanentemente{' '}
+                                    <span className="font-semibold text-foreground">
+                                        {deleteTarget.razonSocial}
+                                    </span>{' '}
+                                    (<span className="font-mono text-foreground">{deleteTarget.numeroRuc}</span>) del
+                                    catálogo de RUCs emisores. Esta acción no se puede deshacer y solo procederá si no
+                                    tiene sucursales, ventas ni comprobantes asociados.
+                                </>
+                            ) : deleteTarget?.type === 'documento' ? (
+                                <>
+                                    Se eliminará el tipo de documento{' '}
+                                    <span className="font-semibold text-foreground">{deleteTarget.nombre}</span> del
+                                    catálogo del sistema. Esta acción no se puede deshacer.
+                                </>
+                            ) : null}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    {deleteTarget?.type === 'ruc' && deleteTarget.esPrincipal && (
+                        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] leading-snug text-amber-800 dark:text-amber-300">
+                            Este RUC está marcado actualmente como <strong>RUC Principal</strong>. Si lo eliminas,
+                            recuerda asignar otro RUC como predeterminado para el POS.
+                        </div>
+                    )}
+
+                    <AlertDialogFooter className="pt-1">
+                        <AlertDialogCancel
+                            disabled={isDeleting}
+                            className="text-xs cursor-pointer"
+                        >
+                            Cancelar
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            variant="destructive"
+                            disabled={isDeleting}
+                            onClick={handleConfirmDelete}
+                            className="text-xs font-semibold gap-1.5 cursor-pointer"
+                        >
+                            {isDeleting ? (
+                                <>
+                                    <Loader2 className="size-3.5 animate-spin" />
+                                    <span>Eliminando...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Trash2 className="size-3.5" />
+                                    <span>Sí, eliminar</span>
+                                </>
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAction } from 'next-safe-action/hooks';
-import { newRucEmpresaAction } from '@/server/actions/ruc/ruc-actions';
+import { newRucEmpresaAction, updateRucEmpresaAction } from '@/server/actions/ruc/ruc-actions';
 import { newRucEmpresaSchema, NewRucEmpresaInput } from '@/types/ruc-empresa-schema';
 import { getRucBusiness } from '@/server/actions/get-info-dni-ruc';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ interface Props {
     isOpen: boolean;
     onClose: () => void;
     onSuccess?: (newRuc: RucEmpresa) => void;
+    rucToEdit?: RucEmpresa | null;
     zIndexClass?: string;
 }
 
@@ -40,8 +41,10 @@ const ModalNewRucEmpresa = React.memo(function ModalNewRucEmpresa({
     isOpen,
     onClose,
     onSuccess,
+    rucToEdit = null,
     zIndexClass = "z-50"
 }: Props) {
+    const isEditing = Boolean(rucToEdit);
     const [isSearchingSunat, setIsSearchingSunat] = useState(false);
     const [sunatStatus, setSunatStatus] = useState<string | null>(null);
 
@@ -68,9 +71,39 @@ const ModalNewRucEmpresa = React.memo(function ModalNewRucEmpresa({
         },
     });
 
+    useEffect(() => {
+        if (!isOpen) return;
+        setSunatStatus(null);
+        if (rucToEdit) {
+            reset({
+                numeroRuc: rucToEdit.numeroRuc || '',
+                nombre: rucToEdit.nombre || '',
+                razonSocial: rucToEdit.razonSocial || rucToEdit.nombre || '',
+                direccionFiscal: rucToEdit.direccionFiscal || '',
+                telefono: rucToEdit.telefono || '',
+                email: rucToEdit.email || '',
+                descripcion: rucToEdit.descripcion || '',
+                activo: rucToEdit.activo ?? true,
+                esPrincipal: rucToEdit.esPrincipal ?? false,
+            });
+        } else {
+            reset({
+                numeroRuc: '',
+                nombre: '',
+                razonSocial: '',
+                direccionFiscal: '',
+                telefono: '',
+                email: '',
+                descripcion: '',
+                activo: true,
+                esPrincipal: false,
+            });
+        }
+    }, [isOpen, rucToEdit, reset]);
+
     const esPrincipalValue = watch('esPrincipal');
 
-    const { execute, status } = useAction(newRucEmpresaAction, {
+    const { execute: executeCreate, status: statusCreate } = useAction(newRucEmpresaAction, {
         onSuccess: ({ data }) => {
             if (data?.ok) {
                 toast.success(data.msg);
@@ -89,7 +122,26 @@ const ModalNewRucEmpresa = React.memo(function ModalNewRucEmpresa({
         },
     });
 
-    const isPending = status === 'executing';
+    const { execute: executeUpdate, status: statusUpdate } = useAction(updateRucEmpresaAction, {
+        onSuccess: ({ data }) => {
+            if (data?.ok) {
+                toast.success(data.msg);
+                if (data.data && onSuccess) {
+                    onSuccess(data.data as RucEmpresa);
+                }
+                reset();
+                setSunatStatus(null);
+                onClose();
+            } else if (data?.msg) {
+                toast.error(data.msg);
+            }
+        },
+        onError: () => {
+            toast.error('Error de red al actualizar el RUC');
+        },
+    });
+
+    const isPending = statusCreate === 'executing' || statusUpdate === 'executing';
 
     // Consulta en vivo a la API de SUNAT
     const handleConsultarSunat = async () => {
@@ -146,7 +198,14 @@ const ModalNewRucEmpresa = React.memo(function ModalNewRucEmpresa({
     if (!isOpen) return null;
 
     const onSubmit = (formData: NewRucEmpresaInput) => {
-        execute(formData);
+        if (rucToEdit) {
+            executeUpdate({
+                ...formData,
+                id: rucToEdit.id,
+            });
+        } else {
+            executeCreate(formData);
+        }
     };
 
     return (
@@ -167,10 +226,12 @@ const ModalNewRucEmpresa = React.memo(function ModalNewRucEmpresa({
                             <span>Facturación Multi-RUC</span>
                         </div>
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                            Registrar Nuevo RUC Emisor
+                            {isEditing ? 'Editar RUC Emisor' : 'Registrar Nuevo RUC Emisor'}
                         </h3>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Ingresa el número de RUC para consultar datos de SUNAT o completa los campos manualmente.
+                            {isEditing
+                                ? 'Actualiza los datos fiscales o de contacto del RUC emisor seleccionado.'
+                                : 'Ingresa el número de RUC para consultar datos de SUNAT o completa los campos manualmente.'}
                         </p>
                     </div>
                     <button
@@ -357,12 +418,12 @@ const ModalNewRucEmpresa = React.memo(function ModalNewRucEmpresa({
                             {isPending ? (
                                 <>
                                     <Loader2 className="size-3.5 animate-spin" />
-                                    <span>Registrando...</span>
+                                    <span>{isEditing ? 'Actualizando...' : 'Registrando...'}</span>
                                 </>
                             ) : (
                                 <>
                                     <Check className="size-3.5" />
-                                    <span>Guardar RUC Emisor</span>
+                                    <span>{isEditing ? 'Guardar Cambios' : 'Guardar RUC Emisor'}</span>
                                 </>
                             )}
                         </Button>

@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { rucEmpresa } from "@/server/schema/ruc";
 import {
     newRucEmpresaSchema,
+    updateRucEmpresaSchema,
     toggleRucEmpresaSchema,
     setRucPrincipalSchema,
     deleteRucEmpresaSchema,
@@ -70,6 +71,71 @@ export const newRucEmpresaAction = actionClient
         } catch (error) {
             console.error("Error in newRucEmpresaAction:", error);
             return { ok: false, msg: "Error interno al registrar el RUC de la empresa" };
+        }
+    });
+
+export const updateRucEmpresaAction = actionClient
+    .inputSchema(updateRucEmpresaSchema)
+    .action(async ({ parsedInput }) => {
+        try {
+            const session = await api.getSession({ headers: await headers() });
+            if (!session?.user) return { ok: false, msg: "No tienes permiso para gestionar RUCs" };
+
+            const target = await db.query.rucEmpresa.findFirst({
+                where: { id: parsedInput.id }
+            });
+            if (!target) {
+                return { ok: false, msg: "El RUC que intentas editar no existe" };
+            }
+
+            const cleanRuc = parsedInput.numeroRuc.trim();
+            const cleanNombre = parsedInput.nombre.trim();
+            const cleanRazonSocial = parsedInput.razonSocial.trim();
+
+            const duplicate = await db.query.rucEmpresa.findFirst({
+                where: { numeroRuc: cleanRuc }
+            });
+
+            if (duplicate && duplicate.id !== parsedInput.id) {
+                return {
+                    ok: false,
+                    msg: `El RUC "${cleanRuc}" ya pertenece a "${duplicate.razonSocial || duplicate.nombre}"`,
+                };
+            }
+
+            if (parsedInput.esPrincipal) {
+                await db.update(rucEmpresa).set({ esPrincipal: false });
+            }
+
+            const [updated] = await db
+                .update(rucEmpresa)
+                .set({
+                    numeroRuc: cleanRuc,
+                    nombre: cleanNombre,
+                    razonSocial: cleanRazonSocial,
+                    direccionFiscal: parsedInput.direccionFiscal?.trim() || null,
+                    telefono: parsedInput.telefono?.trim() || null,
+                    email: parsedInput.email?.trim() || null,
+                    descripcion: parsedInput.descripcion?.trim() || null,
+                    activo: parsedInput.esPrincipal ? true : (parsedInput.activo ?? target.activo),
+                    esPrincipal: parsedInput.esPrincipal,
+                    updatedAt: new Date(),
+                })
+                .where(eq(rucEmpresa.id, parsedInput.id))
+                .returning();
+
+            revalidatePath("/dashboard/configuracion");
+            revalidatePath("/dashboard/sucursales");
+            revalidatePath("/dashboard/pos");
+
+            return {
+                ok: true,
+                msg: `RUC ${cleanRuc} actualizado exitosamente`,
+                data: updated,
+            };
+        } catch (error) {
+            console.error("Error in updateRucEmpresaAction:", error);
+            return { ok: false, msg: "Error interno al actualizar el RUC de la empresa" };
         }
     });
 
