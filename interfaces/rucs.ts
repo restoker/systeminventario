@@ -12,6 +12,25 @@ export interface RucSerieResumen {
     estado: boolean;
 }
 
+export interface RucFacturacionResumen {
+    id: string;
+    rucEmpresaId: string;
+    ubigeo: string | null;
+    departamento: string | null;
+    provincia: string | null;
+    distrito: string | null;
+    pathCert: string | null;
+    logo: string | null;
+    usuarioSol: string | null;
+    claveSol: string | null;
+    passwordCertificadoDigital: string | null;
+    produccion: boolean;
+    clienteId: string | null;
+    clienteSecret: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface RucEmpresaRow {
     id: string;
     numeroRuc: string;
@@ -27,6 +46,7 @@ export interface RucEmpresaRow {
     updatedAt: string;
     sucursales: RucSucursalResumen[];
     series: RucSerieResumen[];
+    facturacion: RucFacturacionResumen | null;
     totalVentas: number;
     totalComprobantes: number;
     totalCompras: number;

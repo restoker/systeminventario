@@ -6,6 +6,7 @@ import { asc, count, desc, isNotNull } from 'drizzle-orm';
 import { api } from '@/lib/auth';
 import db from '@/server';
 import { rucEmpresa } from '@/server/schema/ruc';
+import { facturacion } from '@/server/schema/facturacion';
 import { sucursal } from '@/server/schema/sucursal';
 import { tipoComprobante } from '@/server/schema/tipo-comprobante';
 import { venta } from '@/server/schema/venta';
@@ -14,6 +15,7 @@ import { compra } from '@/server/schema/compras';
 import SidebarAux from '@/app/(home)/_ui/Sidebar';
 import type {
     RucEmpresaRow,
+    RucFacturacionResumen,
     RucSerieResumen,
     RucSucursalResumen,
 } from '@/interfaces/rucs';
@@ -33,6 +35,7 @@ export default async function RucsPage() {
 
     const [
         rucsList,
+        facturacionesList,
         sucursalesList,
         seriesList,
         ventasCounts,
@@ -47,6 +50,7 @@ export default async function RucsPage() {
                 desc(rucEmpresa.activo),
                 asc(rucEmpresa.nombre)
             ),
+        db.select().from(facturacion),
         db
             .select({
                 id: sucursal.id,
@@ -94,6 +98,28 @@ export default async function RucsPage() {
             .where(isNotNull(compra.rucId))
             .groupBy(compra.rucId),
     ]);
+
+    const facturacionByRuc = new Map<string, RucFacturacionResumen>();
+    for (const f of facturacionesList) {
+        facturacionByRuc.set(f.rucEmpresaId, {
+            id: f.id,
+            rucEmpresaId: f.rucEmpresaId,
+            ubigeo: f.ubigeo,
+            departamento: f.departamento,
+            provincia: f.provincia,
+            distrito: f.distrito,
+            pathCert: f.pathCert,
+            logo: f.logo,
+            usuarioSol: f.usuarioSol,
+            claveSol: f.claveSol,
+            passwordCertificadoDigital: f.passwordCertificadoDigital,
+            produccion: f.produccion ?? false,
+            clienteId: f.clienteId,
+            clienteSecret: f.clienteSecret,
+            createdAt: f.createdAt.toISOString(),
+            updatedAt: f.updatedAt.toISOString(),
+        });
+    }
 
     const sucursalesByRuc = new Map<string, RucSucursalResumen[]>();
     for (const s of sucursalesList) {
@@ -151,6 +177,7 @@ export default async function RucsPage() {
         updatedAt: item.updatedAt.toISOString(),
         sucursales: sucursalesByRuc.get(item.id) ?? [],
         series: seriesByRuc.get(item.id) ?? [],
+        facturacion: facturacionByRuc.get(item.id) ?? null,
         totalVentas: ventasMap.get(item.id) ?? 0,
         totalComprobantes: comprobantesMap.get(item.id) ?? 0,
         totalCompras: comprasMap.get(item.id) ?? 0,

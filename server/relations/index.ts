@@ -26,8 +26,9 @@ import { compra } from "../schema/compras";
 import { productosCompras } from "../schema/producto-compra";
 import { egresos } from "../schema/egreso";
 import { rucEmpresa } from "../schema/ruc";
+import { facturacion } from "../schema/facturacion";
 
-export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta, productoVenta, devolucion, kardex, igv, imagenProducto, tipoDocumento, comision, configuracion, caja, comprobante, usuarioSucursal, compra, productosCompras, egresos, rucEmpresa }, (r) => ({
+export const relations = defineRelations({ users, sessions, accounts, categorias, products, marcas, unidades, proveedor, sucursal, tipoComprobante, tipoPago, traslado, trasladoDetalle, stockSucursal, venta, productoVenta, devolucion, kardex, igv, imagenProducto, tipoDocumento, comision, configuracion, caja, comprobante, usuarioSucursal, compra, productosCompras, egresos, rucEmpresa, facturacion }, (r) => ({
     users: {
         // 1:N — sesiones de Better Auth del usuario.
         sessions: r.many.sessions({
@@ -483,6 +484,18 @@ export const relations = defineRelations({ users, sessions, accounts, categorias
         compras: r.many.compra({
             from: r.rucEmpresa.id,
             to: r.compra.rucId,
+        }),
+        // 1:1 — Configuración de facturación electrónica (SUNAT / certificado digital) de este RUC
+        facturacion: r.one.facturacion({
+            from: r.rucEmpresa.id,
+            to: r.facturacion.rucEmpresaId,
+        }),
+    },
+    // Facturación electrónica (1:1 con ruc_empresa)
+    facturacion: {
+        rucEmpresa: r.one.rucEmpresa({
+            from: r.facturacion.rucEmpresaId,
+            to: r.rucEmpresa.id,
         }),
     },
 }));

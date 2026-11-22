@@ -17,6 +17,7 @@ import {
     ChevronRight,
     Copy,
     Eye,
+    FileKey2,
     Loader2,
     MoreHorizontal,
     Pencil,
@@ -34,6 +35,7 @@ import { useAction } from 'next-safe-action/hooks';
 import type {
     RucEmpresaRow,
     RucEstadoFiltro,
+    RucFacturacionResumen,
     RucOrdenFiltro,
 } from '@/interfaces/rucs';
 import type { RucEmpresa } from '@/server/schema/ruc';
@@ -78,6 +80,7 @@ import {
 } from '@/components/ui/table';
 import ModalNewRucEmpresa from '../../configuracion/_ui/ModalNewRucEmpresa';
 import SheetRucDetalle from './SheetRucDetalle';
+import SheetFacturacionForm from './SheetFacturacionForm';
 
 interface TablaRucsProps {
     initialRucs: RucEmpresaRow[];
@@ -127,6 +130,9 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
     const [selectedRucId, setSelectedRucId] = useState<string | null>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
 
+    const [facturacionRucId, setFacturacionRucId] = useState<string | null>(null);
+    const [isFacturacionOpen, setIsFacturacionOpen] = useState(false);
+
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [editingRuc, setEditingRuc] = useState<RucEmpresa | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<RucEmpresaRow | null>(null);
@@ -141,6 +147,11 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
     const selectedRuc = useMemo(
         () => rucs.find((r) => r.id === selectedRucId) ?? null,
         [rucs, selectedRucId]
+    );
+
+    const facturacionTargetRuc = useMemo(
+        () => rucs.find((r) => r.id === facturacionRucId) ?? null,
+        [rucs, facturacionRucId]
     );
 
     const { execute: executeToggle, status: toggleStatus } = useAction(
@@ -222,6 +233,7 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
         const principal = rucs.find((r) => r.esPrincipal) ?? null;
         const activos = rucs.filter((r) => r.activo).length;
         const inactivos = rucs.length - activos;
+        const conFacturacion = rucs.filter((r) => Boolean(r.facturacion)).length;
         const sucursalesVinculadas = rucs.reduce(
             (acc, r) => acc + r.sucursales.length,
             0
@@ -237,6 +249,7 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
             total: rucs.length,
             activos,
             inactivos,
+            conFacturacion,
             sucursalesVinculadas,
             totalComprobantes,
             totalVentas,
@@ -259,6 +272,8 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
                 r.direccionFiscal ?? '',
                 r.telefono ?? '',
                 r.email ?? '',
+                r.facturacion?.ubigeo ?? '',
+                r.facturacion?.distrito ?? '',
                 ...r.sucursales.map((s) => s.nombre),
             ]
                 .join(' ')
@@ -332,6 +347,26 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
         setIsFormModalOpen(true);
     }, []);
 
+    const handleOpenFacturacion = useCallback((row: RucEmpresaRow) => {
+        setIsDetailOpen(false);
+        setFacturacionRucId(row.id);
+        setIsFacturacionOpen(true);
+    }, []);
+
+    const handleFacturacionSuccess = useCallback(
+        (saved: RucFacturacionResumen) => {
+            setRucs((prev) =>
+                prev.map((r) =>
+                    r.id === saved.rucEmpresaId
+                        ? { ...r, facturacion: saved }
+                        : r
+                )
+            );
+            router.refresh();
+        },
+        [router]
+    );
+
     const handleToggleActivo = useCallback(
         (row: RucEmpresaRow) => {
             const nextActivo = !row.activo;
@@ -404,6 +439,7 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
                 updatedAt: new Date(saved.updatedAt).toISOString(),
                 sucursales: [],
                 series: [],
+                facturacion: null,
                 totalVentas: 0,
                 totalComprobantes: 0,
                 totalCompras: 0,
@@ -440,7 +476,7 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                     align="end"
-                    className="w-52"
+                    className="w-56"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <DropdownMenuItem
@@ -462,11 +498,22 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
                         <>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
+                                onClick={() => handleOpenFacturacion(row)}
+                                className="cursor-pointer"
+                            >
+                                <FileKey2 className="size-4" />
+                                <span>
+                                    {row.facturacion
+                                        ? 'Editar datos de facturación'
+                                        : 'Agregar datos de facturación'}
+                                </span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                                 onClick={() => handleOpenEdit(row)}
                                 className="cursor-pointer"
                             >
                                 <Pencil className="size-4" />
-                                <span>Editar datos</span>
+                                <span>Editar datos del RUC</span>
                             </DropdownMenuItem>
 
                             {!row.esPrincipal && (
@@ -512,6 +559,7 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
             handleCopyRuc,
             handleOpenDetail,
             handleOpenEdit,
+            handleOpenFacturacion,
             handleSetPrincipal,
             handleToggleActivo,
             isAdmin,
@@ -534,7 +582,7 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
                             r.nombre.trim().toLowerCase();
 
                     return (
-                        <div className="py-1 min-w-0 max-w-sm space-y-0.5">
+                        <div className="py-1 min-w-0 max-w-xs space-y-0.5">
                             <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="text-sm font-semibold text-foreground tabular-nums">
                                     {r.numeroRuc}
@@ -586,7 +634,7 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
                     const contactParts = [r.telefono, r.email].filter(Boolean);
 
                     return (
-                        <div className="py-1 min-w-0 max-w-xs space-y-0.5">
+                        <div className="py-1 min-w-0 max-w-60 space-y-0.5">
                             <div
                                 className={
                                     r.direccionFiscal
@@ -607,12 +655,72 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
                 },
             },
             {
+                id: 'facturacion',
+                header: 'Facturación SUNAT',
+                cell: ({ row }) => {
+                    const r = row.original;
+                    const f = r.facturacion;
+
+                    if (f) {
+                        const subDetail = [
+                            f.ubigeo ? `Ubigeo ${f.ubigeo}` : null,
+                            f.usuarioSol ? `SOL: ${f.usuarioSol}` : null,
+                        ]
+                            .filter(Boolean)
+                            .join(' · ');
+
+                        return (
+                            <div className="py-1 space-y-0.5 min-w-0 max-w-44">
+                                <span
+                                    className={
+                                        f.produccion
+                                            ? 'inline-flex items-center rounded-md bg-emerald-500/12 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-300'
+                                            : 'inline-flex items-center rounded-md bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-300'
+                                    }
+                                >
+                                    {f.produccion
+                                        ? 'Producción'
+                                        : 'Pruebas (Beta)'}
+                                </span>
+                                <div className="text-[13px] text-muted-foreground truncate tabular-nums">
+                                    {subDetail || 'Configuración básica'}
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div className="py-1">
+                            {isAdmin ? (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenFacturacion(r);
+                                    }}
+                                    className="h-7 -ml-2 px-2 text-[13px] font-medium text-muted-foreground hover:text-foreground gap-1.5 cursor-pointer"
+                                >
+                                    <FileKey2 className="size-3.5" />
+                                    <span>Configurar</span>
+                                </Button>
+                            ) : (
+                                <span className="text-[13px] text-muted-foreground">
+                                    Sin configurar
+                                </span>
+                            )}
+                        </div>
+                    );
+                },
+            },
+            {
                 id: 'sucursales',
                 header: 'Sucursales',
                 cell: ({ row }) => {
                     const r = row.original;
                     return (
-                        <div className="py-1 min-w-0 max-w-48">
+                        <div className="py-1 min-w-0 max-w-44">
                             <div
                                 className={
                                     r.sucursales.length > 0
@@ -699,7 +807,7 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
                 ),
             },
         ],
-        [copiedId, handleCopyRuc, renderRowMenu]
+        [copiedId, handleCopyRuc, handleOpenFacturacion, isAdmin, renderRowMenu]
     );
 
     const table = useTable(
@@ -762,7 +870,7 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
                         )}
                     </div>
                     <p className="text-[15px] text-muted-foreground leading-relaxed">
-                        Razones sociales registradas para emitir comprobantes y asignar facturación por sucursal.
+                        Razones sociales registradas para emitir comprobantes, configurar credenciales SUNAT y asignar facturación por sucursal.
                     </p>
                 </div>
 
@@ -863,14 +971,8 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
                         </div>
                         <div className="text-[13px] text-muted-foreground tabular-nums">
                             {metrics.activos}{' '}
-                            {metrics.activos === 1 ? 'activo' : 'activos'}
-                            {metrics.inactivos > 0
-                                ? ` · ${metrics.inactivos} ${
-                                      metrics.inactivos === 1
-                                          ? 'inactivo'
-                                          : 'inactivos'
-                                  }`
-                                : ''}
+                            {metrics.activos === 1 ? 'activo' : 'activos'} ·{' '}
+                            {metrics.conFacturacion} con SUNAT
                         </div>
                     </div>
 
@@ -949,7 +1051,7 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
                                 setSearchQuery(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            placeholder="Buscar por RUC, razón social, nombre comercial, dirección o sucursal..."
+                            placeholder="Buscar por RUC, razón social, nombre comercial, ubigeo, dirección o sucursal..."
                             aria-label="Buscar RUC"
                             className="h-10 pl-9 pr-9 text-sm bg-background border-border/80"
                         />
@@ -1046,7 +1148,19 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
                                 </p>
                             )}
 
-                            <div className="grid grid-cols-2 gap-3 text-[13px]">
+                            <div className="grid grid-cols-3 gap-2 text-[13px]">
+                                <div>
+                                    <div className="text-muted-foreground">
+                                        Facturación
+                                    </div>
+                                    <div className="font-medium text-foreground truncate">
+                                        {r.facturacion
+                                            ? r.facturacion.produccion
+                                                ? 'Producción'
+                                                : 'Pruebas'
+                                            : 'Sin configurar'}
+                                    </div>
+                                </div>
                                 <div>
                                     <div className="text-muted-foreground">
                                         Sucursales
@@ -1060,11 +1174,28 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
                                         Actividad
                                     </div>
                                     <div className="font-medium text-foreground tabular-nums">
-                                        {r.totalComprobantes} comp. ·{' '}
-                                        {r.totalVentas} ventas
+                                        {r.totalComprobantes} comp.
                                     </div>
                                 </div>
                             </div>
+
+                            {isAdmin && !r.facturacion && (
+                                <div className="pt-1">
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenFacturacion(r);
+                                        }}
+                                        className="h-8 px-3 text-xs font-medium gap-1.5 cursor-pointer"
+                                    >
+                                        <FileKey2 className="size-3.5" />
+                                        <span>Agregar datos de facturación</span>
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     ))
                 ) : (
@@ -1109,7 +1240,7 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
 
             {/* Vista escritorio (>= lg) */}
             <div className="hidden lg:block rounded-xl bg-card border border-border/80 overflow-hidden">
-                <Table className="min-w-195">
+                <Table className="min-w-220">
                     <TableHeader className="bg-muted/45">
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow
@@ -1304,11 +1435,25 @@ export default function TablaRucs({ initialRucs, isAdmin }: TablaRucsProps) {
                 onOpenChange={setIsDetailOpen}
                 isAdmin={isAdmin}
                 onEdit={handleOpenEdit}
+                onConfigureFacturacion={handleOpenFacturacion}
                 onSetPrincipal={handleSetPrincipal}
                 isMutating={isMutating}
             />
 
-            {/* Modal de registro y edición */}
+            {/* Panel lateral de configuración de facturación SUNAT */}
+            {isAdmin && (
+                <SheetFacturacionForm
+                    ruc={facturacionTargetRuc}
+                    open={isFacturacionOpen}
+                    onOpenChange={(open) => {
+                        setIsFacturacionOpen(open);
+                        if (!open) setFacturacionRucId(null);
+                    }}
+                    onSuccess={handleFacturacionSuccess}
+                />
+            )}
+
+            {/* Modal de registro y edición de RUC */}
             {isAdmin && (
                 <ModalNewRucEmpresa
                     isOpen={isFormModalOpen}

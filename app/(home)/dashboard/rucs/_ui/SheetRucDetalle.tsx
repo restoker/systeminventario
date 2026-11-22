@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import {
     Check,
     Copy,
+    FileKey2,
     Mail,
     MapPin,
     Pencil,
@@ -30,6 +31,7 @@ interface SheetRucDetalleProps {
     onOpenChange: (open: boolean) => void;
     isAdmin: boolean;
     onEdit: (ruc: RucEmpresaRow) => void;
+    onConfigureFacturacion: (ruc: RucEmpresaRow) => void;
     onSetPrincipal: (ruc: RucEmpresaRow) => void;
     isMutating: boolean;
 }
@@ -52,6 +54,7 @@ export default function SheetRucDetalle({
     onOpenChange,
     isAdmin,
     onEdit,
+    onConfigureFacturacion,
     onSetPrincipal,
     isMutating,
 }: SheetRucDetalleProps) {
@@ -63,6 +66,14 @@ export default function SheetRucDetalle({
         toast.success(`${label} copiado`);
         setTimeout(() => setCopiedField(null), 1800);
     };
+
+    const ubicacionParts = ruc?.facturacion
+        ? [
+              ruc.facturacion.distrito,
+              ruc.facturacion.provincia,
+              ruc.facturacion.departamento,
+          ].filter(Boolean)
+        : [];
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -188,6 +199,157 @@ export default function SheetRucDetalle({
                                         </div>
                                     )}
                                 </dl>
+                            </section>
+
+                            {/* Facturación electrónica (SUNAT) */}
+                            <section
+                                aria-label="Facturación electrónica SUNAT"
+                                className="space-y-3"
+                            >
+                                <div className="flex items-center justify-between gap-2">
+                                    <h3 className="text-[13px] font-semibold text-foreground">
+                                        Facturación electrónica (SUNAT)
+                                    </h3>
+                                    {isAdmin && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            disabled={isMutating}
+                                            onClick={() => onConfigureFacturacion(ruc)}
+                                            className="h-7 px-2 text-xs font-medium gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                                        >
+                                            <FileKey2 className="size-3.5" />
+                                            <span>
+                                                {ruc.facturacion
+                                                    ? 'Editar'
+                                                    : 'Configurar'}
+                                            </span>
+                                        </Button>
+                                    )}
+                                </div>
+
+                                {ruc.facturacion ? (
+                                    <div className="rounded-xl bg-muted/45 p-4 space-y-3 text-sm">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-[13px] text-muted-foreground">
+                                                Entorno
+                                            </span>
+                                            <span
+                                                className={
+                                                    ruc.facturacion.produccion
+                                                        ? 'inline-flex items-center rounded-md bg-emerald-500/12 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-300'
+                                                        : 'inline-flex items-center rounded-md bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-300'
+                                                }
+                                            >
+                                                {ruc.facturacion.produccion
+                                                    ? 'Producción'
+                                                    : 'Pruebas (Beta)'}
+                                            </span>
+                                        </div>
+
+                                        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[13px]">
+                                            <div className="space-y-0.5">
+                                                <dt className="text-muted-foreground">
+                                                    Ubigeo
+                                                </dt>
+                                                <dd className="font-medium text-foreground tabular-nums">
+                                                    {ruc.facturacion.ubigeo || 'Sin registrar'}
+                                                </dd>
+                                            </div>
+
+                                            <div className="space-y-0.5">
+                                                <dt className="text-muted-foreground">
+                                                    Ubicación
+                                                </dt>
+                                                <dd className="font-medium text-foreground truncate">
+                                                    {ubicacionParts.length > 0
+                                                        ? ubicacionParts.join(', ')
+                                                        : 'Sin registrar'}
+                                                </dd>
+                                            </div>
+
+                                            <div className="space-y-0.5">
+                                                <dt className="text-muted-foreground">
+                                                    Usuario SOL
+                                                </dt>
+                                                <dd className="font-medium text-foreground truncate">
+                                                    {ruc.facturacion.usuarioSol || 'Sin registrar'}
+                                                </dd>
+                                            </div>
+
+                                            <div className="space-y-0.5">
+                                                <dt className="text-muted-foreground">
+                                                    Clave SOL
+                                                </dt>
+                                                <dd className="font-medium text-foreground">
+                                                    {ruc.facturacion.claveSol
+                                                        ? 'Configurada'
+                                                        : 'Sin registrar'}
+                                                </dd>
+                                            </div>
+
+                                            <div className="space-y-0.5 sm:col-span-2">
+                                                <dt className="text-muted-foreground">
+                                                    Certificado digital
+                                                </dt>
+                                                <dd
+                                                    className="font-medium text-foreground truncate"
+                                                    title={ruc.facturacion.pathCert || undefined}
+                                                >
+                                                    {ruc.facturacion.pathCert
+                                                        ? ruc.facturacion.pathCert
+                                                        : 'Sin ruta registrada'}
+                                                    {ruc.facturacion.passwordCertificadoDigital
+                                                        ? ' · Contraseña guardada'
+                                                        : ''}
+                                                </dd>
+                                            </div>
+
+                                            <div className="space-y-0.5">
+                                                <dt className="text-muted-foreground">
+                                                    API SUNAT (Client ID)
+                                                </dt>
+                                                <dd className="font-medium text-foreground truncate">
+                                                    {ruc.facturacion.clienteId || 'Sin registrar'}
+                                                </dd>
+                                            </div>
+
+                                            <div className="space-y-0.5">
+                                                <dt className="text-muted-foreground">
+                                                    Logotipo
+                                                </dt>
+                                                <dd
+                                                    className="font-medium text-foreground truncate"
+                                                    title={ruc.facturacion.logo || undefined}
+                                                >
+                                                    {ruc.facturacion.logo
+                                                        ? 'Configurado'
+                                                        : 'Sin logotipo'}
+                                                </dd>
+                                            </div>
+                                        </dl>
+                                    </div>
+                                ) : (
+                                    <div className="rounded-xl bg-muted/40 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <p className="text-[13px] text-muted-foreground leading-relaxed">
+                                            Este RUC aún no tiene datos de facturación electrónica vinculados.
+                                        </p>
+                                        {isAdmin && (
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                size="sm"
+                                                disabled={isMutating}
+                                                onClick={() => onConfigureFacturacion(ruc)}
+                                                className="h-8 px-3 text-xs font-medium gap-1.5 shrink-0 cursor-pointer"
+                                            >
+                                                <FileKey2 className="size-3.5" />
+                                                <span>Agregar datos</span>
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
                             </section>
 
                             {/* Actividad operativa */}

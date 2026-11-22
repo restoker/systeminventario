@@ -16,4 +16,7 @@ export const facturacion = coreTable('facturacion', {
     clienteId: text('clienteId'),//para emitir notas de credito sunat
     clienteSecret: text('clienteSecret'),//para emitir notas de credito sunat
     rucEmpresaId: text('rucEmpresaId').notNull().references(() => rucEmpresa.id),
-})
+});
+
+export type Facturacion = typeof facturacion.$inferSelect;
+export type NewFacturacion = typeof facturacion.$inferInsert;
