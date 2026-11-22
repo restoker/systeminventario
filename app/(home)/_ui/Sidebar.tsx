@@ -204,8 +204,8 @@ export const adminRoutes: Record<string, NavItem[]> = {
             icon: UsersIcon,
         },
         {
-            title: 'Servicios',
-            url: '/dashboard/categorias',
+            title: "RUC's",
+            url: '/dashboard/rucs',
             icon: TagsIcon,
         },
         {

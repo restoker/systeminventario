@@ -60,6 +60,7 @@ export const newRucEmpresaAction = actionClient
             }).returning();
 
             revalidatePath("/dashboard/configuracion");
+            revalidatePath("/dashboard/rucs");
             revalidatePath("/dashboard/sucursales");
             revalidatePath("/dashboard/pos");
 
@@ -125,6 +126,7 @@ export const updateRucEmpresaAction = actionClient
                 .returning();
 
             revalidatePath("/dashboard/configuracion");
+            revalidatePath("/dashboard/rucs");
             revalidatePath("/dashboard/sucursales");
             revalidatePath("/dashboard/pos");
 
@@ -153,6 +155,7 @@ export const toggleRucEmpresaAction = actionClient
                 .returning();
 
             revalidatePath("/dashboard/configuracion");
+            revalidatePath("/dashboard/rucs");
             revalidatePath("/dashboard/sucursales");
             revalidatePath("/dashboard/pos");
 
@@ -183,6 +186,7 @@ export const setRucPrincipalAction = actionClient
                 .returning();
 
             revalidatePath("/dashboard/configuracion");
+            revalidatePath("/dashboard/rucs");
             revalidatePath("/dashboard/sucursales");
             revalidatePath("/dashboard/pos");
 
@@ -228,6 +232,7 @@ export const deleteRucEmpresaAction = actionClient
             await db.delete(rucEmpresa).where(eq(rucEmpresa.id, id));
 
             revalidatePath("/dashboard/configuracion");
+            revalidatePath("/dashboard/rucs");
             revalidatePath("/dashboard/sucursales");
             revalidatePath("/dashboard/pos");
 

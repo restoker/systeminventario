@@ -11,14 +11,7 @@ export const rucEmpresa = coreTable("ruc_empresa", {
     descripcion: text("descripcion"),
     activo: boolean("activo").default(true).notNull(),
     esPrincipal: boolean("es_principal").default(false).notNull(),
-    // ubigeo: text('ubigeo'),//para emitir notas de credito sunat
-    // provincia: text('provincia'),//para emitir notas de credito sunat
-    // distrito: text('distrito'),//para emitir notas de credito sunat
-    // departamento: text('departamento'),//para emitir notas de credi
-    // pathCert: text('pathCert'),
-    // logo: text('logo'),
-    // usuarioSol: text('usuarioSol'),
-    // claveSol: text('claveSol'),
+
 });
 
 export type RucEmpresa = typeof rucEmpresa.$inferSelect;

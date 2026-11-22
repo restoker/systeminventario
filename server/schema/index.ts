@@ -26,6 +26,7 @@ import { comision } from "./comision";
 import { configuracion } from "./configuracion";
 import { usuarioSucursal } from "./usuario-sucursal";
 import { rucEmpresa } from "./ruc";
+import { facturacion } from "./facturacion";
 
 export default {
     users,
@@ -70,4 +71,5 @@ export default {
     configuracion,
     usuarioSucursal,
     rucEmpresa,
+    facturacion,
 }
