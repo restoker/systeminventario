@@ -2,10 +2,12 @@ import { GrainGradient } from "@paper-design/shaders-react";
 import RegisterForm from "./_ui/RegisterForm";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 export default async function Register() {
     const session = await auth.api.getSession({ headers: await headers() });
+
+    return notFound();
     // console.log(session);
     if (session) {
         redirect('/dashboard')
